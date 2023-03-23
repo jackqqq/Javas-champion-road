@@ -485,14 +485,6 @@ hashCode方法和equals方法都是是顶级类`Object`中的⽅法：
 - 调用`add()`方法向set中添加元素；
 - 使用对象来计算hashCode，如果两个对象的hashCode相同则继续调用`equals()`方法进行比较；
 
-### 1.4.x HashMap 与 HashTable的区别
-
-<u>HashMap</u>：
-
-<u>HashTable</u>：
-
-
-
 ### 1.4.13 常见Map的排序规则是怎样的？
 
 - `LinkedHashMap`按照添加顺序排序;
@@ -584,6 +576,27 @@ Hash冲突的意思是**不同key计算得到的Hash值相同**，需要放到�
 - 大于这个值，空间节省了，但链表就会比较长影响性能；
 - 小于这个值，冲突减少了，但扩容就会更频繁，空间占用也更多；
 
+### 1.4.x HashMap的扩容机制
+
+<u>1.7版本</u>
+
+- 先⽣成新数组 
+- 遍历⽼数组中的每个位置上的链表上的每个元素
+- 取每个元素的key，并基于新数组⻓度，计算出每个元素在新数组中的下标 
+- 将元素添加到新数组中去
+- 所有元素转移完了之后，将新数组赋值给HashMap对象的table属性
+
+<u>1.8版本</u> 
+
+- 先⽣成新数组
+- 遍历⽼数组中的每个位置上的链表或红⿊树 
+  - 如果是链表，则直接将链表中的每个元素重新计算下标，并添加到新数组中去
+  - 如果是红⿊树，则先遍历红⿊树，先计算出红⿊树中每个元素对应在新数组中的下标位置
+    - 统计每个下标位置的元素个数
+    - 如果该位置下的元素个数超过了8，则⽣成⼀个新的红⿊树，并将根节点的添加到新数组的对应位置
+    - 如果该位置下的元素个数没有超过8，那么则⽣成⼀个链表，并将链表的头节点添加到新数组的 对应位置 
+- 所有元素转移完了之后，将新数组赋值给HashMap对象的table属性
+
 ### 1.4.x HashMap 与 ConcurrentHashMap的区别
 
 HashMap 与 ConcurrentHashMap 都是以key-value 形式的存储数据；
@@ -599,20 +612,57 @@ HashMap 与 ConcurrentHashMap 都是以key-value 形式的存储数据；
 
 -  JUC 下的类，线程安全；
 - 底层数据结构：
-  - JDK 1.8 之前：分段锁现实的 Segment + HashEntry；
+  - JDK 1.8 之前：分段锁现实的 Segment + 数组+链表；
   - JDK 1.8 之后：采用 Node + CAS + Synchronized；
 
-### 1.4.21 ConcurrentHashMap为什么性能比HashTable高
+### 1.4.x Hashtable和ConcurrentHashMap的区别
 
-ConcurrentHashMap线程安全的Map, hashtable类基本上所有的⽅法都是采⽤synchronized 进⾏线程安全控制 ⾼并发情况下效率就降低 ConcurrentHashMap是采⽤了分段锁的思想提⾼性能，锁粒度更细化
+* Hashtable 与 ConcurrentHashMap 都是线程安全的 Map 集合；
+* Hashtable 并发度低，整个 Hashtable 对应一把锁，同一时刻只能有一个线程操作它；
+* ConcurrentHashMap 并发度高；
+  * JDK 1.8 之前ConcurrentHashMap 使用了Segment  + 数组+链表的结构，每个Segment 对应一把锁，如果多个线程访问不同的Segment，就不会冲突；
+  * JDK 1.8 之后ConcurrentHashMap将数组的每个头节点作为锁，如果多个线程方法问的头节点不同，就不会冲突；
 
-### 1.4.22 JDK1.7和JDK1.8中ConcurrentHashMap实现的区别有没了解
+相比于HashTable类基本上所有的⽅法都是采⽤synchronized 进⾏线程安全控制，在⾼并发情况下效率低，ConcurrentHashMap则是采⽤了分段锁的思想提⾼性能，锁粒度更细化；
 
-JDK8之前，ConcurrentHashMap使⽤锁分段技术，将数据分成⼀段段存储，每个数据段配置⼀把 锁，即segment类，这个类继承ReentrantLock来保证线程安全 技术点：Segment+HashEntry JKD8的版本取消Segment这个分段锁数据结构，底层也是使⽤Node数组+链表+红⿊树，从⽽实现对 每⼀段数据就⾏加锁，也减少了并发冲突的概率，CAS(读)+Synchronized(写) 技术点：Node+Cas+Synchronized
+### 1.4.22 ConcurrentHashMap在JDK1.7和JDK1.8中的区别
 
-### 1.4.23 ConcurrentHashMap的put的核心逻辑（JDK8以上版本）
+<u>ConcurrentHashMap 1.7</u>
 
-spread(key.hashCode()) 重哈希，减少碰撞概率 tabAt(i) 获取table中索引为i的Node元素 casTabAt(i) 利⽤CAS操作获取table中索引为i的Node元素 put的核⼼流程 1、key进⾏重哈希spread(key.hashCode()) 2、对当前table进⾏⽆条件循环 3、如果没有初始化table，则⽤initTable进⾏初始化 4、如果没有hash冲突，则直接⽤cas插⼊新节点，成功后则直接判断是否需要扩容，然后结束 5、(fh = f.hash) == MOVED 如果是这个状态则是扩容操作，先进⾏扩容 6、存在hash冲突，利⽤synchronized (f) 加锁保证线程安全 7、如果是链表，则直接遍历插⼊，如果数量⼤于8，则需要转换成红⿊树 8、如果是红⿊树则按照红⿊树规则插⼊ 9、最后是检查是否需要扩容addCount()
+* 数据结构：`Segment(大数组) + HashEntry(小数组) + 链表`，每个 Segment 对应一把锁，如果多个线程访问不同的 Segment，则不会冲突；
+* 并发度：Segment 数组大小即并发度，决定了同一时刻最多能有多少个线程并发访问；
+  * **Segment 数组不能扩容**，意味着并发度在 ConcurrentHashMap 创建时就固定了；
+* 索引计算
+  * 假设大数组长度是2^m^，key 在大数组内的索引是 key 的二次 hash 值的高 m 位；
+  * 假设小数组长度是2^n^，key 在小数组内的索引是 key 的二次 hash 值的低 n 位；
+* 扩容：每个小数组的扩容相对独立，小数组在超过扩容因子时会触发扩容，每次扩容**翻倍**；
+* Segment[0] 原型：首次创建其它小数组时，会以此原型为依据来创建（数组长度，扩容因子都会以原型为准）；
+
+<u>ConcurrentHashMap 1.8</u>
+
+* 数据结构：`Node 数组 + 链表或红黑树`，数组的每个头节点作为锁，如果多个线程访问的头节点不同，则不会冲突。首次生成头节点时如果发生竞争，利用 cas 而非 syncronized，进一步提升性能
+* 并发度：Node 数组有多大，并发度就有多大，与 1.7 不同，Node 数组可以扩容
+* 扩容：
+  * 条件：Node 数组满 3/4 时就会扩容
+  * 单位：以**链表**为单位从后向前迁移链表，迁移完成的将旧数组头节点替换为 ForwardingNode；
+* 与 1.7 相比是懒惰初始化
+
+### 1.4.x ConcurrentHashMap的capacity和factor
+
+* capacity 代表预估的元素个数，capacity / factory 来计算出初始数组大小，需要贴近2^n^;
+* loadFactor 只在计算初始数组大小时被使用，之后扩容固定为 3/4；
+* 超过树化阈值时的扩容问题，如果容量已经是 64，直接树化，否则在原来容量基础上做 3 轮扩容
+
+### 1.4.x ConcurrentHashMap扩容过程中的并发get和put
+
+* 扩容时并发 get
+  * 根据是否为 ForwardingNode 来决定是在新数组查找还是在旧数组查找，**不会阻塞**；
+  * 如果链表长度超过 1，则需要对节点进行复制（创建新节点），以防止节点迁移后 next 指针改变；
+  * 如果链表最后几个元素扩容后索引不变，则节点无需复制
+* 扩容时并发 put
+  * 如果 put 的线程与扩容线程操作的链表是同一个，put 线程会阻塞；
+  * 如果 put 的线程操作的链表还未迁移完成，即头节点不是 ForwardingNode，则可以并发执行；
+  * 如果 put 的线程操作的链表已经迁移完成，即头结点是 ForwardingNode，则可以协助扩容；
 
 ## 1.5 并发编程
 
@@ -709,13 +759,123 @@ spread(key.hashCode()) 重哈希，减少碰撞概率 tabAt(i) 获取table中索
 
 ### 1.5.10 在Java中可以有哪些方法来保证线程安全
 
-### 1.5.11 volatile和synchronized的区别
+### 1.5.x wait和sleep的区别
 
-### 1.5.12 为什么会出现脏读？
+<u>共同点</u>
+
+* wait() ，wait(long) 和 sleep(long) 的效果都是让当前线程暂时放弃 CPU 的使用权，进入**阻塞状态**；
+
+<u>不同点</u>
+
+* 方法归属不同
+  * sleep(long) 是 Thread 的静态方法；
+  * 而 wait()，wait(long) 都是 Object 的成员方法，每个对象都有；
+
+* 醒来时机不同
+  * 执行 sleep(long) 和 wait(long) 的线程都会在等待相应毫秒后醒来；
+  * wait(long) 和 wait() 还可以被 notify 唤醒，wait() 如果不唤醒就一直等下去；
+  * 它们都可以被打断（interrupt）唤醒；
+
+* 锁特性不同（重点）
+  * wait 方法的调用必须先获取 wait 对象的锁，而 sleep 则无此限制；
+  * wait 方法执行后会释放对象锁，允许其它线程获得该对象锁（我放弃 cpu，但你们还可以用）；
+  * 而 sleep 如果在 synchronized 代码块中执行，并不会释放对象锁（我放弃 cpu，你们也用不了）；
+
+### 1.5.x lock vs synchronized的区别
+
+**三个层面**
+
+不同点
+
+* 语法层面
+  * synchronized 是关键字，源码在 jvm 中，用 c++ 语言实现
+  * Lock 是接口，源码由 jdk 提供，用 java 语言实现
+  * 使用 synchronized 时，退出同步代码块锁会自动释放，而使用 Lock 时，需要手动调用 unlock 方法释放锁
+* 功能层面
+  * 二者均属于悲观锁、都具备基本的互斥、同步、锁重入功能
+  * Lock 提供了许多 synchronized 不具备的功能，例如获取等待状态、公平锁、可打断、可超时、多条件变量
+  * Lock 有适合不同场景的实现，如 ReentrantLock， ReentrantReadWriteLock
+* 性能层面
+  * 在没有竞争时，synchronized 做了很多优化，如偏向锁、轻量级锁，性能不赖
+  * 在竞争激烈时，Lock 的实现通常会提供更好的性能
+
+**公平锁**
+
+* 公平锁的公平体现
+  * **已经处在阻塞队列**中的线程（不考虑超时）始终都是公平的，先进先出
+  * 公平锁是指**未处于阻塞队列**中的线程来争抢锁，如果队列不为空，则老实到队尾等待
+  * 非公平锁是指**未处于阻塞队列**中的线程来争抢锁，与队列头唤醒的线程去竞争，谁抢到算谁的
+* 公平锁会降低吞吐量，一般不用
+
+**条件变量**
+
+* ReentrantLock 中的条件变量功能类似于普通 synchronized 的 wait，notify，用在当线程获得锁后，发现条件不满足时，临时等待的链表结构
+* 与 synchronized 的等待集合不同之处在于，ReentrantLock 中的条件变量可以有多个，可以实现更精细的等待、唤醒控制
+
+### 1.5.11 volatile的理解
+
+**原子性**
+
+* 起因：多线程下，不同线程的**指令发生了交错**导致的共享变量的读写混乱
+* 解决：用悲观锁或乐观锁解决，volatile 并不能解决原子性
+
+**可见性**
+
+* 起因：由于**编译器优化、或缓存优化、或 CPU 指令重排序优化**导致的对共享变量所做的修改另外的线程看不到
+* 解决：用 volatile 修饰共享变量，能够防止编译器等优化发生，让一个线程对共享变量的修改对另一个线程可见
+
+**有序性**
+
+* 起因：由于**编译器优化、或缓存优化、或 CPU 指令重排序优化**导致指令的实际执行顺序与编写顺序不一致
+* 解决：用 volatile 修饰共享变量会在读、写共享变量时加入不同的屏障，阻止其他读写操作越过屏障，从而达到阻止重排序的效果
+* 注意：
+  * **volatile 变量写**加的屏障是阻止上方其它写操作越过屏障排到 **volatile 变量写**之下
+  * **volatile 变量读**加的屏障是阻止下方其它读操作越过屏障排到 **volatile 变量读**之上
+  * volatile 读写加入的屏障只能防止同一线程内的指令重排
+
+### 1.5.x ThreadLocal的理解
+
+<u>作用</u>
+
+* ThreadLocal 可以实现**资源对象**的**线程间隔离**，让每个线程各用各的资源对象，避免争用引发的线程安全问题；
+* ThreadLocal 同时实现了**线程内的资源共享**；
+
+<u>原理</u>
+
+每个线程内有一个 ThreadLocalMap 类型的成员变量，用来存储资源对象
+
+* 调用 set 方法，就是以 **ThreadLocal 自己作为 key**，资源对象作为 **value**，放入当前线程的 ThreadLocalMap 集合中；
+* 调用 get 方法，就是以 **ThreadLocal 自己作为 key**，到当前线程中查找关联的资源值；
+* 调用 remove 方法，就是以 **ThreadLocal 自己作为 key**，移除当前线程关联的资源值；
+
+所以ThreadLocal只起到关联的作用，真正起到线程隔离作用的是ThreadLocalMap；
+
+ThreadLocalMap 的一些特点
+
+* key 的 hash 值统一分配；
+* 初始容量 16，扩容因子 2/3，扩容容量翻倍；
+* key 索引冲突后用**开放寻址法**解决冲突；
+
+### 1.5.x ThreadLocal的key为什么被设计为弱引用
+
+Thread 可能需要长时间运行（如线程池中的线程），如果 key 不再使用，需要在内存不足（GC）时释放其占用的内存，设计为弱引用方便GC回收key对象；
+
+### 1.5.x ThreadLocal内存释放时机
+
+* 被动 GC 释放 key
+  * 仅是让 key 的内存释放，**关联 value 的内存并不会释放**；
+* 懒惰被动释放 value
+  * get key 时，发现是 null key，则释放其 value 内存；
+  * set key 时，会使用**启发式扫描**，清除临近的 null key 的 value 内存，启发次数与元素个数，是否发现 null key 有关；
+* 主动 remove 释放 key，value
+  * 会同时释放 key，value 的内存，也会清除临近的 null key 的 value 内存；
+  * 推荐使用它，因为一般使用 ThreadLocal 时都把它作为静态变量（即强引用），因此无法被动依靠 GC 回收；
+
+### 1.5.12 为什么会出现脏读
 
 ### 1.5.13 什么是指令重排
 
-### 1.5.14 知道什么是happens-before
+### 1.5.14 什么是happens-before
 
 ### 1.5.15 并发编程三要素+举例
 
@@ -723,7 +883,19 @@ spread(key.hashCode()) 重哈希，减少碰撞概率 tabAt(i) 获取table中索
 
 ### 1.5.17 线程间的调度算法
 
-### 1.5.18 日常开发中使用到的Java中的锁有哪些？
+### 1.5.18 Java中的锁
+
+### 1.5.x 悲观锁和乐观锁的区别
+
+* 悲观锁的代表是 synchronized 和 Lock 锁
+  * 其核心思想是【线程只有占有了锁，才能去操作共享变量，每次只有一个线程占锁成功，获取锁失败的线程，都得停下来等待】
+  * 线程从运行到阻塞、再从阻塞到唤醒，涉及线程上下文切换，如果频繁发生，影响性能
+  * 实际上，线程在获取 synchronized 和 Lock 锁时，如果锁已被占用，都会做几次重试操作，减少阻塞的机会
+
+* 乐观锁的代表是 AtomicInteger，使用 cas 来保证原子性
+  * 其核心思想是【无需加锁，每次只有一个线程能成功修改共享变量，其它失败的线程不需要停止，不断重试直至成功】
+  * 由于线程一直运行，不需要阻塞，因此不涉及线程上下文切换
+  * 它需要多核 cpu 支持，且线程数不应超过 cpu 核数
 
 ### 1.5.19 多线程死锁的例子
 
@@ -739,3 +911,8 @@ spread(key.hashCode()) 重哈希，减少碰撞概率 tabAt(i) 获取table中索
 
 ## 1.6 JVM
 
+### 1.6.x JVM 内存结构
+
+### 1.6.x JVM 内存参数
+
+### 1.6.x JVM 垃圾回收
