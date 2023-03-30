@@ -672,7 +672,7 @@ HashMap 与 ConcurrentHashMap 都是以key-value 形式的存储数据；
 
 ### 1.5.3 并发、并行、串行之间的区别
 
-- <u>-串⾏</u>：⼀个任务执⾏完，才能执⾏下⼀个任务
+- <u>串⾏</u>：⼀个任务执⾏完，才能执⾏下⼀个任务
 
 - <u>并⾏(Parallelism)</u>：两个任务同时执⾏；
 
@@ -718,7 +718,7 @@ public ThreadPoolExecutor(int corePoolSize,
   - 当所有线程都在繁忙，workQueue 也放满时，会触发拒绝策略；
   - 调用 shutdown 等方法关闭线程池；
 
-### 1.5.x线程池的拒绝策略有哪些
+### 1.5.x 线程池的拒绝策略有哪些
 
 - AbortPolicy：直接丢弃任务，抛出异常，这是默认策略；
 - CallerRunsPolicy：只用调用者所在的线程来处理任务 ；
@@ -928,8 +928,6 @@ Thread 可能需要长时间运行（如线程池中的线程），如果 key �
 ### 1.5.13 什么是指令重排
 
 ### 1.5.14 什么是happens-before
-
-### 1.5.15 并发编程三要素+举例
 
 ### 1.5.16 进程间的调度算法
 
@@ -1300,7 +1298,7 @@ JVM参数⼤致可以分为三类：
 
 <u>强引用</u>
 
-- 普通变量赋值即为强引用，如 `A a = new A();`；
+- 在 Java 中最常见的就是强引用，把一个对象赋给一个引用变量，这个引用变量就是一个强引用，如 `A a = new A();`；
 
 - 通过 GC Root 的引用链，**如果强引用不到该对象，该对象才能被回收**；
 
@@ -1308,11 +1306,11 @@ JVM参数⼤致可以分为三类：
 
 <u>软引用（SoftReference）</u>
 
-- 例如：`SoftReference a = new SoftReference(new A());`
+- 需要用 SoftReference 类来实现，例如：`SoftReference a = new SoftReference(new A());`
 
 - 如果仅有软引用该对象时，**首次垃圾回收不会回收该对象，如果内存仍不足，再次回收时才会释放对象**
 
-- 软引用自身需要配合引用队列来释放
+- 软引用自身需要配合引用队列来释放，常用在对内存敏感的程序中；
 
 - 典型例子是反射数据
 
@@ -1320,7 +1318,7 @@ JVM参数⼤致可以分为三类：
 
 <u>弱引用（WeakReference）</u>
 
-- 例如：`WeakReference a = new WeakReference(new A());`
+- 需要用 WeakReference 类来实现，例如：`WeakReference a = new WeakReference(new A());`
 
 - 如果仅有弱引用引用该对象时，**只要发生垃圾回收，就会释放该对象**
 
@@ -1332,9 +1330,9 @@ JVM参数⼤致可以分为三类：
 
 <u>虚引用（PhantomReference）</u>
 
-- 例如：`PhantomReference a = new PhantomReference(new A(), referenceQueue);`
+- 需要 PhantomReference 类来实现，例如：`PhantomReference a = new PhantomReference(new A(), referenceQueue);`
 
-- 必须配合引用队列一起使用，当虚引用所引用的对象被回收时，由 Reference Handler 线程将虚引用对象入队，这样就可以知道哪些对象被回收，从而对它们关联的资源做进一步处理
+- 必须配合引用队列一起使用，主要作用是跟踪对象被垃圾回收的状态，当虚引用所引用的对象被回收时，由 Reference Handler 线程将虚引用对象入队，这样就可以知道哪些对象被回收，从而对它们关联的资源做进一步处理
 
 - 典型例子是 Cleaner 释放 DirectByteBuffer 关联的直接内存
 
@@ -1351,3 +1349,269 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 * 内存释放不及时：重写了 finalize 方法的对象在第一次被 gc 时，并不能及时释放它占用的内存，因为要等着 FinalizerThread 调用完 finalize，把它从 unfinalized 队列移除后，第二次 gc 时才能真正释放内存
 * 有的文章提到【Finalizer 线程会和我们的主线程进行竞争，不过由于它的优先级较低，获取到的CPU时间较少，因此它永远也赶不上主线程的步伐】这个显然是错误的，FinalizerThread 的优先级较普通线程更高，原因应该是 finalize 串行执行慢等原因综合导致
 
+# 二、框架
+
+# 三、数据库
+
+## 3.x 事务的基本特性
+
+## 3.x 事务的隔离级别
+
+<u>未提交读</u>
+
+* 读到其它事务未提交的数据（最新的版本）；
+* 错误现象：有脏读、不可重复读、幻读现象
+
+<u>提交读（RC）</u>
+
+* 读到其它事务已提交的数据（最新已提交的版本）；
+* 错误现象：有不可重复读、幻读现象；
+* 使用场景：希望看到最新的有效值；
+
+<u>可重复读（RR）</u> 
+
+* 在事务范围内，**多次读**能够保证一致性（快照建立时最新已提交版本）；
+* 错误现象：有幻读现象，可以用加锁避免；
+* 使用场景：事务内要求更强的一致性，但看到的未必是最新的有效值；
+
+<u>串行读</u>
+
+* 在事务范围内，**仅有读读可以并发**，读写或写写会阻塞其它事务，用这种办法保证更强的一致性；
+* 错误现象：无；
+
+## 3.x 脏读现象
+
+| **tx1**                                                    | **tx2**                                               |
+| ---------------------------------------------------------- | ----------------------------------------------------- |
+| set  session transaction isolation level read uncommitted; |                                                       |
+| start  transaction;                                        |                                                       |
+| select  * from account;  /\*两个账户都为 1000\*/           |                                                       |
+|                                                            | start  transaction;                                   |
+|                                                            | update  account set balance = 2000 where accountNo=1; |
+| select  * from account; /\*1号账户2000, 2号账户1000\*/     |                                                       |
+
+- tx2 **未提交**的情况下，tx1 仍然读**取到了它的更改**；
+
+## 3.x 不可重复度现象
+
+| **tx1**                                                  | **tx2**                                               |
+| -------------------------------------------------------- | ----------------------------------------------------- |
+| set  session transaction isolation level read committed; |                                                       |
+| start  transaction;                                      |                                                       |
+| select  * from account; /\*两个账户都为 1000\*/          |                                                       |
+|                                                          | update  account set balance = 2000 where accountNo=1; |
+| select  * from account; /\*1号账户2000, 2号账户1000\*/   |                                                       |
+
+- tx1 **在同一事务内，两次读取的结果不一致**，当然，此时 tx2 的事务已提交；
+
+## 3.x 幻读现象
+
+| **tx1**                                                      | **tx2**                               |
+| ------------------------------------------------------------ | ------------------------------------- |
+| set  session transaction isolation level repeatable read;    |                                       |
+| start  transaction;                                          |                                       |
+| select  * from account; /\*存在 1,2 两个账户\*/              |                                       |
+|                                                              | insert  into account values(3, 1000); |
+| select  * from account; /\*发现还是只有 1,2 两个账户\*/      |                                       |
+| insert  into account values(3, 5000);  /\* ERROR  1062 (23000): Duplicate entry '3' for key 'PRIMARY'  \*/ |                                       |
+
+- tx1 **查询**时并没有发现 3 号账户，执行**插入**时却发现主键冲突异常，就好像出现了幻觉一样；
+
+**加锁避免幻读**
+
+| **tx1**                                                   | **tx2**                                           |
+| --------------------------------------------------------- | ------------------------------------------------- |
+| set  session transaction isolation level repeatable read; |                                                   |
+| start  transaction;                                       |                                                   |
+| select  * from account; /\*存在 1,2 两个账户\*/           |                                                   |
+| select  * from account where accountNo=3  for update;     |                                                   |
+|                                                           | insert  into account values(3, 1000);  /* 阻塞 */ |
+| insert  into account values(3, 5000);                     |                                                   |
+
+* 在 for update 这行语句执行时，虽然此时 3 号账户尚不存在，但 MySQL 在 repeatable read 隔离级别下会用间隙锁，锁住 2 号记录与正无穷大之间的间隙；
+* 此时 tx2 想插入 3 号记录就不行了，被间隙锁挡住了；
+
+**串行读避免幻读**
+
+| **tx1**                                                | **tx2**                                           |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| set  session transaction isolation level serializable; |                                                   |
+| start  transaction;                                    |                                                   |
+| select  * from account; /* 存在 1,2 两个账户 */        |                                                   |
+|                                                        | insert  into account values(3, 1000);  /* 阻塞 */ |
+| insert  into account values(3, 5000);                  |                                                   |
+
+* 串行读隔离级别下，普通的 select 也会加共享读锁，其它事务的查询可以并发，但增删改就只能阻塞了；
+
+## 3.x 什么是MVCC
+
+## 3.x 什么是当前读
+
+当前读即读**取最新提交**的数据，以下SQL属于当前读：
+
+* select … for update；
+* select ... lock in share mode；
+* insert、update、delete，都会按最新提交的数据进行操作；
+
+当前读本质上是基于锁的并发读操作；
+
+## 3.x 什么是快照读
+
+快照读是读取**某一个快照建立时**（可以理解为某一时间点）的数据，也称为一致性读。
+
+快照读主要体现在 select 时，而不同隔离级别下，select 的行为不同：
+
+* 在 Serializable 隔离级别下：普通 select 也变成当前读，即加共享读锁；
+
+* 在 RC 隔离级别下： **每次 select** 都会建立新的快照；
+
+* 在 RR 隔离级别下：
+  * 事务启动后，**首次 select** 会建立快照；
+  * 如果事务启动选择了 with consistent snapshot，**事务启动时**就建立快照；
+  * **基于旧数据的修改操作**，会重新建立快照；
+
+快照读本质上读取的是历史数据（原理是回滚段），属于无锁查询；
+
+**RR 下，快照建立时机 - 第一次 select 时**
+
+| **tx1**                                                      | **tx2**                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set  session transaction isolation level repeatable read;    |                                                       |
+| start  transaction;                                          |                                                       |
+| select  * from account;  /\* 此时建立快照，两个账户为 1000  \*/ |                                                       |
+|                                                              | update  account set balance = 2000 where accountNo=1; |
+| select  * from account;  /\* 两个账户仍为 1000 \*/           |                                                       |
+
+* <u>快照一旦建立，以后的查询都基于此快照</u>，因此 tx1 中第二次 select 仍然得到 1 号账户余额为 1000
+
+如果 tx2 的 update 先执行
+
+| **tx1**                                                      | **tx2**                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set  session transaction isolation level repeatable read;    |                                                       |
+| start  transaction;                                          |                                                       |
+|                                                              | update  account set balance = 2000 where accountNo=1; |
+| select  * from account; /\* 此时建立快照，1号余额已经为2000 \*/ |                                                       |
+
+**RR 下，快照建立时机 - 事务启动时**
+
+如果希望事务启动时就建立快照，可以添加 with consistent snapshot 选项
+
+| **tx1**                                                      | **tx2**                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set  session transaction isolation level repeatable read;    |                                                       |
+| start  transaction with consistent snapshot; /\* 此时建立快照，两个账户为 1000  \*/ |                                                       |
+|                                                              | update  account set balance = 2000 where accountNo=1; |
+| select  * from account; /\* 两个账户仍为 1000 \*/            |                                                       |
+
+**RR 下，快照建立时机 - 修改数据时**
+
+| **tx1**                                                      | **tx2**                                                     |
+| ------------------------------------------------------------ | ----------------------------------------------------------- |
+| set  session transaction isolation level repeatable read;    |                                                             |
+| start  transaction;                                          |                                                             |
+| select  * from account; /\* 此时建立快照，两个账户为 1000 \*/ |                                                             |
+|                                                              | update  account set balance=balance+1000 where accountNo=1; |
+| update  account set balance=balance+1000 where accountNo=1;  |                                                             |
+| select  * from account; /\* 1号余额为3000 \*/                |                                                             |
+
+* tx1 内的修改必须重新建立快照，否则，就会发生丢失更新的问题
+
+
+
+## 3.x InnoDB vs MyISAM
+
+<u>InnoDB</u>
+
+* 索引分为聚簇索引与二级索引：
+  * 聚簇索引：主键值作为索引数据，叶子节点还包含了所有字段数据，索引和数据是存储在一起的；
+  * 二级索引：除主键外的其它字段建立的索引称为二级索引。被索引的字段值作为索引数据，叶子节点还包含了主键值；
+
+* **支持事务**：
+  * 通过 undo log 支持事务回滚、当前读（多版本查询）；
+  * 通过 redo log 实现持久性；
+  * 通过两阶段提交实现一致性；
+  * 通过当前读、锁实现隔离性；
+
+* 支持行锁、间隙锁；
+
+* 支持外键；
+
+<u>MyISAM</u>
+
+* 索引只有一种：
+  * 被索引字段值作为索引数据，叶子节点还包含了该记录数据页地址，数据和索引是分开存储的；
+* **不支持事务**，没有 undo log 和 redo log；
+* 仅支持表锁；
+* 不支持外键；
+* 会保存表的总行数；
+
+## 3.x Innodb是如何实现事务的
+
+## 3.x Explain语句结果中各个字段分别表示什么
+
+## 3.x 常见的索引实现
+
+<u>哈希索引</u>
+
+* 理想时间复杂度为 `O(1)`；
+* 适用场景：适用于**等值查询**的场景，内存数据的索引；
+* 典型实现：Redis，MySQL 的 memory 引擎；
+
+<u>平衡二叉树索引</u> 
+
+* 查询和更新的时间复杂度都是 `O(logn)`；
+* 适用场景：适用于等值查询以及**范围查询**；适合内存数据的索引，但不适合磁盘数据的索引，可以认为**树的高度决定了磁盘 I/O 的次数**，百万数据树高约为 20；
+
+<u>BTree 索引</u>
+
+* BTree 其实就是 n 叉平衡树，分叉多意味着节点中的孩子（key）多，树高自然就降低了；
+* 分叉数由页大小和行（包括 key 与 value）大小决定；
+  * 假设页大小为 16k，每行 40 个字节，那么分叉数就为 16k / 40 ≈ 410；
+  * 而分叉为 410，则百万数据树高约为3，仅 3 次 I/O 就能找到所需数据；
+* **局部性原理**：每次 I/O 按页为单位读取数据，把多个 **key 相邻**的行放在同一页中（每页就是树上一个节点），能进一步减少 I/O；
+
+<u>B+ 树索引</u> 
+
+* 在 BTree 的基础上做了改进，**索引上只存储 key**，这样能进一步增加分叉数，假设 key 占 13 个字节，那么一页数据分叉数可以到 1260，树高可以进一步下降为 2；
+
+> ***树高计算公式***
+>
+> * $log_{10}(N) /  log_{10}(M)$ 其中 N 为数据行数，M 为分叉数
+
+## 3.x B树和B+树的区别
+
+无论 BTree 还是 B+Tree都是n叉平衡树，每个叶子节点到根节点距离都相同；
+
+<u>BTree</u>
+
+- BTree key 及 value 在每个节点上，无论叶子还是非叶子节点；
+
+![image-20210901170943656](interview_notes.assets/image-20210901170943656.png)
+
+<u>B+Tree</u>
+
+* B+Tree 普通节点只存 key，叶子节点才存储 key 和 value，因此分叉数可以更多；
+  * 不过也请注意，普通节点上的 key 有的会与叶子节点的 key 重复；
+* B+Tree 必须到达叶子节点才能找到 value；
+* B+Tree 叶子节点用链表连接，可以方便范围查询及全表遍历；
+
+![image-20210901170954328](interview_notes.assets/image-20210901170954328.png)
+
+## 3.x 为什么Mysql使用B+树
+
+## 3.x 索引命中需要注意什么
+
+<u>索引用于排序</u>
+
+## 3.x 查询语句执行流程
+
+## 3.x undo log 与 redo log
+
+## 3.x Mysql锁有哪些，如何理解
+
+## 3.x Mysql慢查询该如何优化
+
+# 四、缓存
+
+# 五、分布式
