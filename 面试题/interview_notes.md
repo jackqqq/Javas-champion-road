@@ -1579,6 +1579,25 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 >
 > * $log_{10}(N) /  log_{10}(M)$ 其中 N 为数据行数，M 为分叉数
 
+## 3.x InnoDB 索引特点
+
+聚簇索引：主键值作为索引数据，叶子节点还包含了所有字段数据，索引和数据是存储在一起的
+
+![image-20210901155308778.png](interview_notes.assets/image-20210901155308778.png)
+
+- 主键即 7369、7499、7521 等
+
+二级索引：除主键外的其它字段建立的索引称为二级索引。被索引的字段值作为索引数据，叶子节点还包含了主键值
+
+![image-20210901155317460](interview_notes.assets/image-20210901155317460.png)
+
+- 上图中 800、950、1100 这些是工资字段的值，根据它们建立了二级索引
+
+![image-20210901155327838](interview_notes.assets/image-20210901155327838.png)
+
+* 上图中，如果执行查询 `select empno, ename, sal from emp where sal = 800`，这时候可以利用二级索引定位到 800 这个工资，同时还能知道主键值 7369
+* 但 select 字句中还出现了 ename 字段，在二级索引中不存在，因此需要根据主键值 7369 查询聚簇索引来获取 ename 的信息，这个过程俗称**回表**
+
 ## 3.x B树和B+树的区别
 
 无论 BTree 还是 B+Tree都是n叉平衡树，每个叶子节点到根节点距离都相同；
@@ -1602,13 +1621,281 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 
 ## 3.x 索引命中需要注意什么
 
-<u>索引用于排序</u>
+<u>索引用于排序</u>：
+
+- **多列排序需要用组合索引**，单列索引并不能在多列排序时加速；
+
+  ```sql
+  create index last_first_idx on big_person(last_name,first_name);
+  ```
+
+- **多列排序需要遵循最左前缀原则**，如下：第1个查询可以利用索引，第2、3查询不能利用索引
+
+  ```sql
+  explain select * from big_person order by last_name, first_name limit 10; 
+  explain select * from big_person order by first_name, last_name limit 10; 
+  explain select * from big_person order by first_name limit 10; 
+  ```
+
+- **多列排序升降序需要一致**，如下：查询1可以利用索引，查询2不能利用索引
+
+  ```sql
+  explain select * from big_person order by last_name desc, first_name desc limit 10; 
+  explain select * from big_person order by last_name desc, first_name asc limit 10; 
+  ```
+
+> ***最左前缀原则***
+>
+> 若建立组合索引 (a,b,c)，则可以**利用**到索引的排序条件是：
+>
+> * order by a
+> * order by a, b
+> * order by a, b, c
+
+<u>索引用于 where 筛选</u>：
+
+- **模糊查询需要遵循字符串最左前缀原则**，如下：查询2可以利用索引，查询1,3不能利用索引 
+
+  ```sql
+  explain SELECT * FROM big_person WHERE first_name LIKE 'dav%' LIMIT 5;
+  explain SELECT * FROM big_person WHERE last_name LIKE 'dav%' LIMIT 5;
+  explain SELECT * FROM big_person WHERE last_name LIKE '%dav' LIMIT 5;
+  ```
+
+- **组合索引需要遵循最左前缀原则**，如下：查询1,2可以利用索引，查询3,4不能利用索引
+
+  ```sql
+  create index province_city_county_idx on big_person(province,city,county);
+  explain SELECT * FROM big_person WHERE province = '上海' AND city='宜兰县' AND county='中西区';
+  explain SELECT * FROM big_person WHERE county='中西区' AND city='宜兰县' AND province = '上海';
+  explain SELECT * FROM big_person WHERE city='宜兰县' AND county='中西区';
+  explain SELECT * FROM big_person WHERE county='中西区';
+  ```
+
+- 函数及计算问题，**一旦在字段上应用了计算或函数，都会造成索引失效**。如下：查询2可以利用索引，查询1不能利用索引
+
+  ```sql
+  create index birthday_idx on big_person(birthday);
+  explain SELECT * FROM big_person WHERE ADDDATE(birthday,1)='2005-02-10';
+  explain SELECT * FROM big_person WHERE birthday=ADDDATE('2005-02-10',-1);
+  ```
+
+- 隐式类型转换问题，**字段发生隐式类型转换，会造成索引失效**
+
+  ```sql
+  create index phone_idx on big_person(phone);
+  explain SELECT * FROM big_person WHERE phone = 13000013934;
+  explain SELECT * FROM big_person WHERE phone = '13000013934';
+  ```
+
+  - 查询1会发生隐式类型转换，等价于在phone上应用了函数，造成索引失效
+  - 查询2字段与值类型相同不会类型转换，可以利用索引
+
+> ***最左前缀原则（leftmost prefix）***
+>
+> 若建立组合索引 (a,b,c)，则可以**利用**到索引的查询条件是：
+>
+> * where a = ?
+> * where a = ? and b = ? （注意与条件的先后次序无关，也可以是 where b = ? and a = ?，只要出现即可）
+> * where a = ? and b = ? and c = ? （注意事项同上）
+>
+> **不能利用**的例子：
+>
+> * where b = ?
+> * where b = ? and c = ?
+> * where c = ?
+>
+> 特殊情况：
+>
+> * where a = ? and c = ?（a = ? 会利用索引，但 c = ? 不能利用索引加速，会触发索引条件下推）
+
+<u>索引条件下推</u>：
+
+* MySQL 执行条件判断的时机有两处：
+  * 服务层（上层，不包括索引实现）
+  * 引擎层（下层，包括了索引实现，可以利用）
+
+```sql
+explain SELECT * FROM big_person WHERE province = '上海';
+explain SELECT * FROM big_person WHERE province = '上海' AND city='嘉兴市';
+explain SELECT * FROM big_person WHERE province = '上海' AND city='嘉兴市' AND county='中西区';
+explain SELECT * FROM big_person WHERE province = '上海' AND county='中西区';
+```
+
+- 查询 1,2,3,4 都能利用索引，但 4 相当于部分利用了索引，会触发索引条件下推
+- 上面查询 4 中有 province 条件能够利用索引，在引擎层执行，但 county 条件仍然要交给服务层处理
+  - 在 5.6 之前，服务层需要判断所有记录的 county 条件，性能非常低
+  - 5.6 以后，引擎层会先根据 province 条件过滤，满足条件的记录才在服务层处理 county 条件
+
+<u>二级索引覆盖</u>：
+
+```sql
+explain SELECT * FROM big_person WHERE province = '上海' AND city='宜兰县' AND county= '中西区';
+explain SELECT id,province,city,county FROM big_person WHERE province = '上海' AND city='宜兰县' AND county='中西区';
+```
+
+根据查询条件查询 1，2 都会先走二级索引，但是二级索引仅包含了 (province, city, county) 和 id 信息
+
+* 查询 1 是 select *，因此还有一些字段二级索引中没有，需要回表（查询聚簇索引）来获取其它字段信息
+* 查询 2 的 select 中明确指出了需要哪些字段，这些字段在二级索引都有，就避免了回表查询
+
+<u>其它</u>：
+
+- 表连接需要在连接字段上建立索引;
+- 优化器：
+
+```sql
+create index first_idx on big_person(first_name);
+
+/* 不会利用索引，因为优化器发现查询记录数太多，还不如直接全表扫描 */
+explain SELECT * FROM big_person WHERE first_name > 'Jenni';
+
+/* 会利用索引，因为优化器发现查询记录数不太多 */
+explain SELECT * FROM big_person WHERE first_name > 'Willia';
+
+/* 同一字段的不同值利用 or 连接，会利用索引 */
+explain select * from big_person where id = 1 or id = 190839;
+
+/* 不同字段利用 or 连接，会利用索引(底层分别用了两个索引) */
+explain select * from big_person where first_name = 'David' or last_name = 'Thomas';
+
+/* in 会利用索引 */
+explain select * from big_person where first_name in ('Mark', 'Kevin','David'); 
+
+/* not in 不会利用索引的情况 */
+explain select * from big_person where first_name not in ('Mark', 'Kevin','David');
+
+/* not in 会利用索引的情况 */
+explain select id from big_person where first_name not in ('Mark', 'Kevin','David');
+```
+
+
 
 ## 3.x 查询语句执行流程
 
+<u>执行 SQL 语句 select * from user where id = 1 时发生了什么</u>
+
+![image-20210902082718756](interview_notes.assets/image-20210902082718756.png)
+
+- 连接器：负责建立连接、检查权限、连接超时时间由 wait_timeout 控制，默认 8 小时；
+
+- 查询缓存：会将 SQL 和查询结果以键值对方式进行缓存，修改操作会以表单位导致缓存失效；
+
+- 分析器：词法、语法分析；
+
+- 优化器：决定用哪个索引，决定表的连接顺序等；
+
+- 执行器：根据存储引擎类型，调用存储引擎接口；
+
+- 存储引擎：数据的读写接口，索引、表都在此层实现；
+
 ## 3.x undo log 与 redo log
 
-## 3.x Mysql锁有哪些，如何理解
+<u>undo log</u>
+
+* **回滚数据**，以行为单位，记录数据每次的变更，一行记录有多个版本并存；
+* **多版本并发控制**，即快照读（也称为一致性读），让查询操作可以去访问历史版本；
+
+![image-20210902083051903](interview_notes.assets/image-20210902083051903.png)
+
+- 每个事务会按照开始时间，分配一个单调递增的事务编号` trx id`；
+- 每次事务的改动都会以行为单位记入回滚日志，包括当时的事务编号，改动的值等；
+- 查询操作，事务编号大于自己的数据是不可见的，事务编号小于等于自己的数据才是可见的；
+  - 例如图中红色事务看不到 trx id=102 以及 trx id=101 的数据，只有 trx id=99 的数据对它可见；
+
+<u>redo log</u>
+
+redo log 的作用主要是实现 ACID 中的持久性，保证提交的数据不丢失
+
+* 它记录了**事务提交的变更操作**，服务器意外宕机重启时，利用 redo log 进行回放，重新执行已提交的变更操作；
+* 事务提交时，**首先将变更写入 redo log**，事务就视为成功。至于数据页（表、索引）上的变更，可以放在后面慢慢做；
+  * 数据页上的变更宕机丢失也没事，因为 redo log 里已经记录了
+  * 数据页在磁盘上位置随机，写入速度慢，redo log 的写入是顺序的速度快
+
+它由两部分组成，内存中的 redo log buffer，磁盘上的 redo log file
+
+* redo log file 由一组文件组成，当写满了会循环覆盖较旧的日志，这意味着不能无限依赖 redo log，更早的数据恢复需要 binlog ；
+* buffer 和 file 两部分组成意味着，写入了文件才真正安全，同步策略由参数 innodb_flush_log_at_trx_commit  控制
+  * 0 - 每隔 1s 将日志 write and flush 到磁盘 
+  * 1 - 每次事务提交将日志 write and flush（默认值）
+  * 2 - 每次事务提交将日志 write，每隔 1s flush 到磁盘，意味着 write 意味着写入操作系统缓存，如果 MySQL 挂了，而操作系统没挂，那么数据不会丢失
+
+
+
+## 3.x Mysql锁有哪些
+
+<u>全局锁</u>
+
+- 用作全量备份时，保证**表与表之间的数据一致性**；
+
+- 如果不加任何包含，数据备份时就可能产生不一致的情况，如下图所示
+
+![image-20210902090302805](interview_notes.assets/image-20210902090302805.png)
+
+- 全局锁的语法：
+
+```sql
+flush tables with read lock;	
+```
+
+* 使用全局读锁锁定所有数据库的所有表。这时会阻塞其它所有 DML 以及 DDL 操作，这样可以避免备份过程中的数据不一致。接下来可以执行备份，最后用 unlock tables 来解锁
+
+> ***注意***
+>
+> 但 flush tables 属于比较重的操作，可以使用 --single-transaction 参数来完成不加锁的一致性备份（仅针对 InnoDB 引擎的表）
+>
+> ```sql
+> mysqldump --single-transaction -uroot -p test > 1.sql
+> ```
+
+
+
+<u>表级锁 - 表锁</u>
+
+* 语法：加锁 lock tables 表名 read/write，解锁 unlock tables
+* 缺点：粒度较粗，在 InnoDB 引擎很少使用
+
+
+
+<u>表级锁 - 元数据锁</u>
+
+* 即 metadata-lock（MDL），主要是为**了避免 DML 与 DDL 冲突**，DML 的元数据锁之间不互斥
+
+* 加元数据锁的几种情况
+  * `lock tables read/write`，类型为 SHARED_READ_ONLY 和 SHARED_NO_READ_WRITE
+  * `alter table`，类型为 EXCLUSIVE，与其它 MDL 都互斥
+  * `select，select … lock in share mode`，类型为 SHARED_READ
+  * `insert，update，delete，select for update`，类型为 SHARED_WRITE 
+
+* 查看元数据锁（适用于 MySQL 8.0 以上版本）
+  * `select object_type,object_schema,object_name,lock_type,lock_duration from performance_schema.metadata_locks;`
+
+
+
+<u>表级锁 - IS（意向共享） 与 IX（意向排他）</u>
+
+* 主要是**避免 DML 与表锁冲突**，DML 主要目的是加行锁，为了让表锁不用检查每行数据是否加锁，加意向锁（表级）来减少表锁的判断，意向锁之间不会互斥
+* 加意向表锁的几种情况
+  * `select  … lock in share mode` 会加 IS 锁
+  * `insert，update，delete， select … for update` 会加 IX 锁
+* 查看意向表锁（适用于 MySQL 8.0 以上版本）
+  * `select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks;`
+
+
+
+<u>行级锁</u>
+
+* 种类
+  * 行锁 – 在 RC 下，锁住的是行，防止其他事务对此行 update 或 delete
+  * 间隙锁 – 在 RR 下，锁住的是间隙，防止其他事务在这个间隙 insert 产生幻读
+  * 临键锁 – 在 RR 下，锁住的是前面间隙+行，特定条件下可优化为行锁
+
+* 查看行级锁
+  * `select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks where object_name='表名';`
+
+> ***注意***
+>
+> * 它们锁定的其实都是**索引**上的行与间隙，根据索引的有序性来确定间隙
 
 ## 3.x Mysql慢查询该如何优化
 
