@@ -2125,6 +2125,8 @@ public TransactionAttributeSource transactionAttributeSource() {
 
 ### 2.x.x 父子容器导致的事务失效
 
+对于Service：
+
 ```java
 package day04.tx.app.service;
 
@@ -2147,7 +2149,7 @@ public class Service5 {
 }
 ```
 
-控制器类
+对于Controller：
 
 ```java
 package day04.tx.app.controller;
@@ -2166,7 +2168,9 @@ public class AccountController {
 }
 ```
 
-App 配置类
+Controller和Service的调用关系，可以有两种配置方式，一是把它们放在同一个容器中，另外就是放在父子容器中进行配置：
+
+- App 配置类，为父容器，扫描Service和Mapper；
 
 ```java
 @Configuration
@@ -2178,7 +2182,7 @@ public class AppConfig {
 }
 ```
 
-Web 配置类
+- Web 配置类，为子容器，扫描Controller、Service和Mapper；
 
 ```java
 @Configuration
@@ -2192,12 +2196,11 @@ public class WebConfig {
 现在配置了父子容器，WebConfig 对应子容器，AppConfig 对应父容器，发现事务依然失效
 
 * 原因：子容器扫描范围过大，把未加事务配置的 service 扫描进来
+* 解法
+  * 各扫描各的，不要图简便；
+  * 不要用父子容器，所有 bean 放在同一容器；
 
-* 解法1：各扫描各的，不要图简便
-
-* 解法2：不要用父子容器，所有 bean 放在同一容器
-
-
+如果是Spring Boot则不会出现这种情况；
 
 ### 2.x.x 调用本类方法导致传播行为失效
 
@@ -2218,13 +2221,11 @@ public class Service6 {
 }
 ```
 
-* 原因：本类方法调用不经过代理，因此无法增强
-
-* 解法1：依赖注入自己（代理）来调用
-
-* 解法2：通过 AopContext 拿到代理对象，来调用
-
-* 解法3：通过 CTW，LTW 实现功能增强
+* 原因：事务方法只有通过代理去调用才会生效，而本类方法调用不经过代理，因此无法增强；
+* 解法
+  * 依赖注入自己（代理）来调用；
+  * 通过 AopContext 拿到代理对象，来调用；
+  * 通过 CTW（编译时织入），LTW（加载时织入） 实现功能增强；
 
 解法1
 
@@ -2303,10 +2304,6 @@ public class Service7 {
 
 * 如上图所示，红色线程和蓝色线程的查询都发生在扣减之前，都以为自己有足够的余额做扣减
 
-
-
-### 2.x.x @Transactional 方法导致的 synchronized 失效
-
 针对上面的问题，能否在方法上加 synchronized 锁来解决呢？
 
 ```java
@@ -2341,102 +2338,80 @@ public class Service7 {
 
 ![image-20210903120800185](interview_notes.assets/image-20210903120800185.png)
 
-* 解法1：synchronized 范围应扩大至代理方法调用
-
-* 解法2：使用 select … for update 替换 select
+* 解法
+  * synchronized 范围应扩大至代理方法调用
+  * 使用 select … for update 替换 select
 
 
 
 ## 2.x Spring MVC 执行流程
 
-**概要**
+### 2.x.x 初始化阶段
 
-我把整个流程分成三个阶段
+- 在 Web 容器第一次用到 **DispatcherServlet** 的时候，会创建其对象并执行 **init** 方法：
+  - 如果是Spring + SpringMVC，由Tomcat来初始化**DispatcherServlet** ；
+  - 如果是Spring Boot，由Spring自身来初始化**DispatcherServlet** ；
 
-* 准备阶段
-* 匹配阶段
-* 执行阶段
+- init 方法内会创建 Spring Web 容器，并调用容器 **refresh** 方法
 
-**准备阶段**
+- refresh 过程中会创建并初始化 SpringMVC 中的重要组件， 例如：
+  -  **MultipartResolver**（单例），非必须，在文件上传的时候处理Multipart格式的表单数据；
+  - **HandlerMapping**，请求映射；
+  - **HandlerAdapter**，调用控制器方法来控制请求；
+  - **HandlerExceptionResolver**，处理调用控制器方法中抛出的异常；
+  - **ViewResolver** ，将字符串解析成视图对象；
 
-1. 在 Web 容器第一次用到 DispatcherServlet 的时候，会创建其对象并执行 init 方法
-
-2. init 方法内会创建 Spring Web 容器，并调用容器 refresh 方法
-
-3. refresh 过程中会创建并初始化 SpringMVC 中的重要组件， 例如 MultipartResolver，HandlerMapping，HandlerAdapter，HandlerExceptionResolver、ViewResolver 等
-
-4. 容器初始化后，会将上一步初始化好的重要组件，赋值给 DispatcherServlet 的成员变量，留待后用
+- 容器初始化后，会将上一步初始化好的重要组件，赋值给 DispatcherServlet 的成员变量，留待后用
 
 <img src="interview_notes.assets/image-20210903140657163.png" alt="image-20210903140657163" style="zoom: 80%;" />
 
-**匹配阶段**
+### 2.x.x 匹配阶段
 
-1. 用户发送的请求统一到达前端控制器 DispatcherServlet
+在这个阶段，用户发送的请求统一到达前端控制器 **DispatcherServlet**，但**DispatcherServlet**主要职责是作为一个请求的入口，处理请求需要交给处理器来完成，并不负责处理具体的请求；
 
-2. DispatcherServlet 遍历所有 HandlerMapping ，找到与路径匹配的处理器
-
-   ① HandlerMapping 有多个，每个 HandlerMapping 会返回不同的处理器对象，谁先匹配，返回谁的处理器。其中能识别 @RequestMapping 的优先级最高
-
-   ② 对应 @RequestMapping 的处理器是 HandlerMethod，它包含了控制器对象和控制器方法信息
-
-   ③ 其中路径与处理器的映射关系在 HandlerMapping 初始化时就会建立好
+- DispatcherServlet 遍历所有 HandlerMapping ，找到与路径匹配的处理器
+  - <u>HandlerMapping 有多个</u>，每个 HandlerMapping 会返回不同的处理器对象，<u>谁先匹配，返回谁的处理器</u>；（其中能识别 `@RequestMapping` 的优先级最高）
+  - 对应 `@RequestMapping` 的处理器是 **HandlerMethod**，它包含了<u>控制器对象和控制器方法</u>信息；
+  - 其中路径与处理器的映射关系在 HandlerMapping 初始化时就会建立好；
 
 <img src="interview_notes.assets/image-20210903141017502.png" alt="image-20210903141017502" style="zoom:80%;" />
 
-3. 将 HandlerMethod 连同匹配到的拦截器，生成调用链对象 HandlerExecutionChain 返回
+- 将 HandlerMethod 连同匹配到的拦截器，生成调用链对象 **HandlerExecutionChain** 返回；
 
 <img src="interview_notes.assets/image-20210903141124911.png" alt="image-20210903141124911" style="zoom:80%;" />
 
-4. 遍历HandlerAdapter 处理器适配器，找到能处理 HandlerMethod 的适配器对象，开始调用
+- 遍历**HandlerAdapter** 处理器适配器，找到能处理 HandlerMethod 的适配器对象，开始调用；
 
 <img src="interview_notes.assets/image-20210903141204799.png" alt="image-20210903141204799" style="zoom:80%;" />
 
-**调用阶段**
+### 2.x.x 调用阶段
 
-1. 执行拦截器 preHandle
+- 依次调用拦截器 **preHandle**
 
 <img src="interview_notes.assets/image-20210903141445870.png" alt="image-20210903141445870" style="zoom: 67%;" />
 
-2. 由 HandlerAdapter 调用 HandlerMethod
-
-   ① 调用前处理不同类型的参数
-
-   ② 调用后处理不同类型的返回值
+- 由 HandlerAdapter 调用 HandlerMethod
+  - 调用前处理不同类型的参数
+  - 调用后处理不同类型的返回值
 
 <img src="interview_notes.assets/image-20210903141658199.png" alt="image-20210903141658199" style="zoom:67%;" />
 
-3. 第 2 步没有异常
-
-   ① 返回 ModelAndView
-
-   ② 执行拦截器 postHandle 方法
-
-   ③ 解析视图，得到 View 对象，进行视图渲染
+- 如果第 2 步没有异常：
+  - 将调用结果封装成 ModelAndView；
+  - 反向调用拦截器 postHandle 方法；
+  - 通过ViewResolver解析视图，得到 View 对象，进行视图渲染；
 
 <img src="interview_notes.assets/image-20210903141749830.png" alt="image-20210903141749830" style="zoom:67%;" />
 
-4. 第 2 步有异常，进入 HandlerExceptionResolver 异常处理流程
+- 如果第 2 步有异常，进入 HandlerExceptionResolver 异常处理流程
 
 <img src="interview_notes.assets/image-20210903141844185.png" alt="image-20210903141844185" style="zoom:67%;" />
 
-5. 最后都会执行拦截器的 afterCompletion 方法
+- 最后都会执行拦截器的 afterCompletion 方法
 
-6. 如果控制器方法标注了 @ResponseBody 注解，则在第 2 步，就会生成 json 结果，并标记 ModelAndView 已处理，这样就不会执行第 3 步的视图渲染
-
-
+- 如果控制器方法标注了`@ResponseBody `注解，则在第 2 步，就会生成 json 结果，并标记 ModelAndView 已处理，这样就不会执行第 3 步的视图渲染
 
 ## 2.x Spring 注解
-
-**要求**
-
-* 掌握 Spring 常见注解
-
-> ***提示***
->
-> * 注解的详细列表请参考：面试题-spring-注解.xmind
-> * 下面列出了视频中重点提及的注解，考虑到大部分注解同学们已经比较熟悉了，仅对个别的作简要说明
-
-
 
 **事务注解**
 
