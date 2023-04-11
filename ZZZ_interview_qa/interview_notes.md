@@ -1351,137 +1351,150 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 
 # 二、框架
 
-## 2.x Spring refresh 流程
+## 2.x Spring refresh
 
-**Spring refresh 概述**
+### 2.x.x Spring refresh 概述
 
-refresh 是 AbstractApplicationContext 中的一个方法，负责初始化 ApplicationContext 容器，容器必须调用 refresh 才能正常工作。它的内部主要会调用 12 个方法，我们把它们称为 refresh 的 12 个步骤：
+refresh 是 AbstractApplicationContext 中的一个方法，**负责初始化 ApplicationContext 容器**，容器必须调用 refresh 才能正常工作;
 
-1. prepareRefresh
+它的内部主要会调用 12 个方法，我们把它们称为 refresh 的 12 个步骤：
 
-2. obtainFreshBeanFactory
+1. prepareRefresh：做好准备工作；
 
-3. prepareBeanFactory
+2. obtainFreshBeanFactory：创建或获取BeanFactory；
 
-4. postProcessBeanFactory
+3. prepareBeanFactory：准备BeanFactory；
 
-5. invokeBeanFactoryPostProcessors
+4. postProcessBeanFactory：子类扩展BeanFactory；
 
-6. registerBeanPostProcessors
+5. invokeBeanFactoryPostProcessors：后处理器扩展BeanFactory；
 
-7. initMessageSource
+6. registerBeanPostProcessors：准备Bean后处理器；
 
-8. initApplicationEventMulticaster
+7. initMessageSource：为ApplicationContext提供国际化功能；
 
-9. onRefresh
+8. initApplicationEventMulticaster：为ApplicationContext提供事件发布器；
 
-10. registerListeners
+9. onRefresh：留给子类扩展；
 
-11. finishBeanFactoryInitialization
+10. registerListeners：为ApplicationContext准备监听器；
 
-12. finishRefresh
+11. finishBeanFactoryInitialization：初始化单例Bean，执行Bean后处理器扩展；
+
+12. finishRefresh：准备生命周期管理器，发布ContextRefreshed事件；
 
 > ***功能分类***
 >
-> * 1 为准备环境
+> * 1 为**准备环境**
 >
-> * 2 3 4 5 6 为准备 BeanFactory
+> * 2 3 4 5 6 为**准备 BeanFactory**
 >
-> * 7 8 9 10 12 为准备 ApplicationContext
+> * 7 8 9 10 12 为**准备 ApplicationContext**
 >
-> * 11 为初始化 BeanFactory 中非延迟单例 bean
+> * 11 为**初始化 BeanFactory 中非延迟单例 bean**
 
 
 
-**1. prepareRefresh**
+### 2.x.x prepareRefresh
 
-* 这一步创建和准备了 Environment 对象，它作为 ApplicationContext 的一个成员变量
+这一步创建和准备了 **Environment 对象**，赋值给了ApplicationContext 的一个成员变量
 
-* Environment 对象的作用之一是为后续 @Value，值注入时提供键值
-* Environment 分成三个主要部分
-  * systemProperties - 保存 java 环境键值
-  * systemEnvironment - 保存系统环境键值
-  * 自定义 PropertySource - 保存自定义键值，例如来自于 *.properties 文件的键值
+* Environment 对象的作用之一是为后续 `@Value`值注入时提供**键值信息**；
+* Environment 分成三个主要部分：
+  * systemProperties：保存 Java 环境键值；
+  * systemEnvironment ：保存系统环境键值；
+  * 自定义 PropertySource： 保存自定义键值，例如来自于 *.properties 文件的键值；
 
 ![image-20210902181639048](interview_notes.assets/image-20210902181639048.png)
 
-**2. obtainFreshBeanFactory**
+### 2.x.x obtainFreshBeanFactory
 
-* 这一步获取（或创建） BeanFactory，它也是作为 ApplicationContext 的一个成员变量
-* BeanFactory 的作用是负责 bean 的创建、依赖注入和初始化，bean 的各项特征由 BeanDefinition 定义
-  * BeanDefinition 作为 bean 的设计蓝图，规定了 bean 的特征，如单例多例、依赖关系、初始销毁方法等
-  * BeanDefinition 的来源有多种多样，可以是通过 xml 获得、配置类获得、组件扫描获得，也可以是编程添加
-* 所有的 BeanDefinition 会存入 BeanFactory 中的 beanDefinitionMap 集合
+这一步获取（或创建） **BeanFactory对象**，同样地也赋值给 ApplicationContext 的一个成员变量
+
+BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>，bean 的各项特征由 **BeanDefinition** 定义：
+* BeanDefinition 作为 bean 的设计蓝图，<u>规定了 bean 的特征</u>，如单例多例、依赖关系、初始销毁方法等；
+* BeanDefinition 的来源有多种多样，可以是通过 xml 获得、配置类获得、组件扫描获得，也可以是编程添加；
+
+* 所有的 BeanDefinition 会存入 BeanFactory 中的 **beanDefinitionMap 集合**；
 
 ![image-20210902182004819](interview_notes.assets/image-20210902182004819.png)
 
-**3. prepareBeanFactory**
+### 2.x.x prepareBeanFactory
 
-* 这一步会进一步完善 BeanFactory，为它的各项成员变量赋值
-* beanExpressionResolver 用来解析 SpEL，常见实现为 StandardBeanExpressionResolver
-* propertyEditorRegistrars 会注册类型转换器
-  * 它在这里使用了 ResourceEditorRegistrar 实现类
-  * 并应用 ApplicationContext 提供的 Environment 完成 ${ } 解析
-* registerResolvableDependency 来注册 beanFactory 以及 ApplicationContext，让它们也能用于依赖注入
-* beanPostProcessors 是 bean 后处理器集合，会工作在 bean 的生命周期各个阶段，此处会添加两个：
+这一步会进一步完善 BeanFactory，为它的各项成员变量赋值:
+
+* **beanExpressionResolver** 用来<u>解析 SpEL</u>，常见实现为 StandardBeanExpressionResolver
+* **propertyEditorRegistrars** 会注册<u>类型转换器</u>
+  * 使用的实现类为ResourceEditorRegistrar 
+  * 应用 ApplicationContext 提供的 Environment 完成 ${ } 解析
+* **resolvableDependency**（常见实现类：registerResolvableDependency） 来<u>注册特殊的bean</u>（ beanFactory 以及 ApplicationContext），让它们也能用于依赖注入；
+* **beanPostProcessors** 是 bean 后处理器集合，会工作在 bean 的生命周期各个阶段做一些增强，此处会添加两个（不常用）：
   * ApplicationContextAwareProcessor 用来解析 Aware 接口
   * ApplicationListenerDetector 用来识别容器中 ApplicationListener 类型的 bean
 
 ![image-20210902182541925](interview_notes.assets/image-20210902182541925.png)
 
-**4. postProcessBeanFactory**
+### 2.x.x postProcessBeanFactory
 
-* 这一步是空实现，留给子类扩展。
-  * 一般 Web 环境的 ApplicationContext 都要利用它注册新的 Scope，完善 Web 下的 BeanFactory
-* 这里体现的是模板方法设计模式
+这一步是空实现，留给**子类**扩展：
 
-**5. invokeBeanFactoryPostProcessors**
+* 一般 Web 环境的 ApplicationContext 都要利用它注册新的 Scope，完善 Web 下的 BeanFactory；
 
-* 这一步会调用 beanFactory 后处理器
-* beanFactory 后处理器，充当 beanFactory 的扩展点，可以用来补充或修改 BeanDefinition
+* 这里体现的是模板方法设计模式；
+
+### 2.x.x invokeBeanFactoryPostProcessors
+
+这一步会调用 **beanFactory 后处理器**，充当 beanFactory 的扩展点，可以用来补充或修改 BeanDefinition
+
 * 常见的 beanFactory 后处理器有
-  * ConfigurationClassPostProcessor – 解析 @Configuration、@Bean、@Import、@PropertySource 等
-  * PropertySourcesPlaceHolderConfigurer – 替换 BeanDefinition 中的 ${ }
-  * MapperScannerConfigurer – 补充 Mapper 接口对应的 BeanDefinition
+  * ConfigurationClassPostProcessor：解析 `@Configuration`、`@Bean`、`@Import`、`@PropertySource` 等
+  * *PropertySourcesPlaceHolderConfigurer：替换 BeanDefinition 中的 ${ }*（目前很少用）；
+  * MapperScannerConfigurer：补充 Mapper 接口对应的 BeanDefinition
 
 ![image-20210902183232114](interview_notes.assets/image-20210902183232114.png)
 
-**6. registerBeanPostProcessors**
+### 2.x.x registerBeanPostProcessors
 
-* 这一步是继续从 beanFactory 中找出 bean 后处理器，添加至 beanPostProcessors 集合中
-* bean 后处理器，充当 bean 的扩展点，可以工作在 bean 的实例化、依赖注入、初始化阶段，常见的有：
-  * AutowiredAnnotationBeanPostProcessor 功能有：解析 @Autowired，@Value 注解
-  * CommonAnnotationBeanPostProcessor 功能有：解析 @Resource，@PostConstruct，@PreDestroy
-  * AnnotationAwareAspectJAutoProxyCreator 功能有：为符合切点的目标 bean 自动创建代理
+这一步是继续从 beanFactory 中找出 **bean 后处理器**，添加至 beanPostProcessors 集合中；
+
+* bean 后处理器，和beanFactory的后处理器做区别，bean的后处理器是对bean的创建过程中做各种功能增强，充当 bean 的扩展点，可以工作在 bean 的实例化、依赖注入、初始化阶段，常见的有：
+  * AutowiredAnnotationBeanPostProcessor，功能有：解析 `@Autowired`，`@Value` 注解；
+  * CommonAnnotationBeanPostProcessor，功能有：解析 `@Resource`，`@PostConstruct`，`@PreDestroy`；
+  * AnnotationAwareAspectJAutoProxyCreator，功能有：为符合切点的目标 bean 自动创建代理；
 
 ![image-20210902183520307](interview_notes.assets/image-20210902183520307.png)
 
-**7. initMessageSource**
+### 2.x.x initMessageSource
 
-* 这一步是为 ApplicationContext 添加 messageSource 成员，实现国际化功能
+这一步是为 ApplicationContext 添加 **messageSource 成员**，实现国际化功能；
+
 * 去 beanFactory 内找名为 messageSource 的 bean，如果没有，则提供空的 MessageSource 实现
+* beanFactory没有，可以看作是ApplicationContext独有的功能；
 
 ![image-20210902183819984](interview_notes.assets/image-20210902183819984.png)
 
-**8. initApplicationContextEventMulticaster**
+### 2.x.x initApplicationContextEventMulticaster
 
-* 这一步为 ApplicationContext 添加事件广播器成员，即 applicationContextEventMulticaster
-* 它的作用是发布事件给监听器
+这一步为 ApplicationContext 添加事件广播器**applicationContextEventMulticaster成员**，它的作用是发布事件给监听器；
+
 * 去 beanFactory 找名为 applicationEventMulticaster 的 bean 作为事件广播器，若没有，会创建默认的事件广播器
 * 之后就可以调用 ApplicationContext.publishEvent(事件对象) 来发布事件
 
 ![image-20210902183943469](interview_notes.assets/image-20210902183943469.png)
 
-**9. onRefresh**
+### 2.x.x onRefresh
 
-* 这一步是空实现，留给子类扩展
-  * SpringBoot 中的子类在这里准备了 WebServer，即内嵌 web 容器
-* 体现的是模板方法设计模式
+这一步是空实现，留给**子类**扩展；
 
-**10. registerListeners**
+* <u>SpringBoot 中的子类在这里准备了 WebServer，即内嵌 web 容器</u>；
 
-* 这一步会从多种途径找到事件监听器，并添加至 applicationEventMulticaster
-* 事件监听器顾名思义，用来接收事件广播器发布的事件，有如下来源
+* 体现的是模板方法设计模式；
+
+### 2.x.x registerListeners
+
+这一步会从多种途径找到事件监听器，并添加至 applicationEventMulticaster；
+
+* 事件监听器顾名思义，用来**接收事件广播器发布的事件**，有如下来源：
   * 事先编程添加的
   * 来自容器中的 bean
   * 来自于 @EventListener 的解析
@@ -1489,24 +1502,26 @@ refresh 是 AbstractApplicationContext 中的一个方法，负责初始化 Appl
 
 ![image-20210902184343872](interview_notes.assets/image-20210902184343872.png)
 
-**11. finishBeanFactoryInitialization**
+### 2.x.x finishBeanFactoryInitialization
 
-* 这一步会将 beanFactory 的成员补充完毕，并初始化所有非延迟单例 bean
-* conversionService 也是一套转换机制，作为对 PropertyEditor 的补充
-* embeddedValueResolvers 即内嵌值解析器，用来解析 @Value 中的 ${ }，借用的是 Environment 的功能
-* singletonObjects 即单例池，缓存所有单例对象
-  * 对象的创建都分三个阶段，每一阶段都有不同的 bean 后处理器参与进来，扩展功能
+这一步会将 剩余beanFactory 的成员补充完毕，并初始化所有非延迟单例 bean；
+
+* conversionService ：是一套转换机制，作为<u>对 PropertyEditor 的补充</u>；
+* embeddedValueResolvers ：内嵌值解析器，用来解析 @Value 中的 ${ }，<u>借用的是 Environment 的功能</u>；
+* singletonObjects ：**单例池**，缓存所有**非延迟单例对象**
+  * 对象的创建都分三个阶段（创建、依赖注入、初始化），每一阶段都有不同的 bean 后处理器参与进来，扩展功能；
 
 ![image-20210902184641623](interview_notes.assets/image-20210902184641623.png)
 
-**12. finishRefresh**
+### 2.x.x finishRefresh
 
-* 这一步会为 ApplicationContext 添加 lifecycleProcessor 成员，用来控制容器内需要生命周期管理的 bean
-* 如果容器中有名称为 lifecycleProcessor 的 bean 就用它，否则创建默认的生命周期管理器
-* 准备好生命周期管理器，就可以实现
-  * 调用 context 的 start，即可触发所有实现 LifeCycle 接口 bean 的 start
-  * 调用 context 的 stop，即可触发所有实现 LifeCycle 接口 bean 的 stop
-* 发布 ContextRefreshed 事件，整个 refresh 执行完成
+这一步会为 ApplicationContext 添加 **lifecycleProcessor 成员**，用来控制容器内需要生命周期管理的 bean；
+
+* 如果容器中有名称为 lifecycleProcessor 的 bean 就用它，否则创建默认的生命周期管理器；
+* 准备好生命周期管理器，就可以实现：
+  * 调用 context 的 start，即可触发<u>所有</u>实现 LifeCycle 接口 bean 的 start
+  * 调用 context 的 stop，即可触发<u>所有</u>实现 LifeCycle 接口 bean 的 stop
+* 发布 ContextRefreshed 事件，整个 refresh 执行完成；
 
 ![image-20210902185052433](interview_notes.assets/image-20210902185052433.png)
 
@@ -1514,112 +1529,143 @@ refresh 是 AbstractApplicationContext 中的一个方法，负责初始化 Appl
 
 ## 2.x Spring bean 生命周期
 
-**bean 生命周期 概述**
+### 2.x.x bean 生命周期概述
+
+源码入口：
+
+```java
+	@SuppressWarnings("unchecked")
+	protected <T> T doGetBean(
+			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
+			throws BeansException {
+```
 
 bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean 被销毁，可以总结为以下七个阶段：
 
 1. 处理名称，检查缓存
 2. 处理父子容器
 3. 处理 dependsOn
-4. 选择 scope 策略
-5. 创建 bean
+4. 选择 Scope 策略，按Scope创建bean
+   1. singleton
+   2. prototype
+   3. 其他scope
+5. **创建 bean**
+   1. 创建 bean 实例：@Autowired→唯一带参构造→默认构造；
+   2. 依赖注入：@Autowired @Value，@Resource，ByName ByType，精确指定；
+   3. 初始化：Aware 接口处理，@PostConstruct，InitializingBean，initMethod，创建代理；
+   4. 登记可销毁 bean；
 6. 类型转换处理
-7. 销毁 bean
+7. **销毁 bean**
 
 > ***注意***
 >
 > * 划分的阶段和名称并不重要，重要的是理解整个过程中做了哪些事情
 
+### 2.x.x 处理名称，检查缓存
 
+这一步会处理别名，将别名解析为实际名称；
 
-**1. 处理名称，检查缓存**
+* 对 FactoryBean 也会特殊处理，如果以 & 开头表示要获取 FactoryBean 本身，否则表示要获取其产品；
+* 这里针对单例对象会检查<u>一级、二级、三级缓存</u>：
+  * singletonFactories：三级缓存，存放单例工厂对象
+  * earlySingletonObjects：二级缓存，存放单例工厂的产品对象
+    * 如果发生循环依赖，产品是代理；
+    * 无循环依赖，产品是原始对象
+  * singletonObjects：一级缓存，存放单例成品对象
 
-* 这一步会处理别名，将别名解析为实际名称
-* 对 FactoryBean 也会特殊处理，如果以 & 开头表示要获取 FactoryBean 本身，否则表示要获取其产品
-* 这里针对单例对象会检查一级、二级、三级缓存
-  * singletonFactories 三级缓存，存放单例工厂对象
-  * earlySingletonObjects 二级缓存，存放单例工厂的产品对象
-    * 如果发生循环依赖，产品是代理；无循环依赖，产品是原始对象
-  * singletonObjects 一级缓存，存放单例成品对象
+### 2.x.x 处理父子容器
 
-**2. 处理父子容器**
+如果当前容器根据名字找不到这个 bean，此时若父容器存在，则执行父容器的 getBean 流程；
 
-* 如果当前容器根据名字找不到这个 bean，此时若父容器存在，则执行父容器的 getBean 流程
-* 父子容器的 bean 名称可以重复
+* 父子容器的 bean 名称可以重复（优先子容器的bean）；
 
-**3. 处理 dependsOn**
+### 2.x.x 处理 dependsOn
 
-* 如果当前 bean 有通过 dependsOn 指定了非显式依赖的 bean，这一步会提前创建这些 dependsOn 的 bean 
-* 所谓非显式依赖，就是指两个 bean 之间不存在直接依赖关系，但需要控制它们的创建先后顺序
+如果当前 bean 有通过 dependsOn 指定了**非显式依赖的 bean**，这一步会提前创建这些 dependsOn 的 bean ；
 
-**4. 选择 scope 策略**
+* 所谓非显式依赖，就是指两个 bean 之间不存在直接依赖关系，但需要控制它们的创建先后<u>顺序</u>
 
-* 对于 singleton scope，首先到单例池去获取 bean，如果有则直接返回，没有再进入创建流程
-* 对于 prototype scope，每次都会进入创建流程
-* 对于自定义 scope，例如 request，首先到 request 域获取 bean，如果有则直接返回，没有再进入创建流程
+### 2.x.x 选择 Scope 策略
 
-**5.1 创建 bean - 创建 bean 实例**
+可以理解为从XXX范围内找到这个bean；
 
-| **要点**                             | **总结**                                                     |
-| ------------------------------------ | ------------------------------------------------------------ |
-| 有自定义 TargetSource 的情况         | 由 AnnotationAwareAspectJAutoProxyCreator 创建代理返回       |
-| Supplier 方式创建 bean 实例          | 为 Spring 5.0 新增功能，方便编程方式创建  bean  实例         |
-| FactoryMethod 方式  创建 bean  实例  | ① 分成静态工厂与实例工厂；② 工厂方法若有参数，需要对工厂方法参数进行解析，利用  resolveDependency；③ 如果有多个工厂方法候选者，还要进一步按权重筛选 |
-| AutowiredAnnotationBeanPostProcessor | ① 优先选择带  @Autowired  注解的构造；② 若有唯一的带参构造，也会入选 |
-| mbd.getPreferredConstructors         | 选择所有公共构造，这些构造之间按权重筛选                     |
-| 采用默认构造                         | 如果上面的后处理器和 BeanDefiniation 都没找到构造，采用默认构造，即使是私有的 |
+* 对于 <u>singleton scope</u>，单例bean：
+  * 销毁流程：从refresh被创建到clone被销毁，BeanFactory会记录哪些bean要调用销毁方法；
+  * 创建流程：首先到**单例池**去获取 bean，如果有则直接返回，没有再进入创建流程
+* 对于 <u>prototype scope</u>，多例bean：
+  * 销毁流程：从首次getBean被创建到调用BeanFactory的destroyBean被销毁；
+  * 创建流程：**不缓存bean**，每次都会进入创建流程；
+* 对于自定义 scope，例如 request，
+  * 销毁流程：从首次getBean被创建，到request结束前被销毁；
+  * 创建流程：首先到 **request 域**获取 bean，如果有则直接返回，没有再进入创建流程；
 
-**5.2 创建 bean - 依赖注入**
+### 2.x.x 创建bean
 
-| **要点**                             | **总结**                                                     |
-| ------------------------------------ | ------------------------------------------------------------ |
-| AutowiredAnnotationBeanPostProcessor | 识别   @Autowired  及 @Value  标注的成员，封装为  InjectionMetadata 进行依赖注入 |
-| CommonAnnotationBeanPostProcessor    | 识别   @Resource  标注的成员，封装为  InjectionMetadata 进行依赖注入 |
-| resolveDependency                    | 用来查找要装配的值，可以识别：① Optional；② ObjectFactory 及 ObjectProvider；③ @Lazy  注解；④ @Value  注解（${  }, #{ }, 类型转换）；⑤ 集合类型（Collection，Map，数组等）；⑥ 泛型和  @Qualifier（用来区分类型歧义）；⑦ primary  及名字匹配（用来区分类型歧义） |
-| AUTOWIRE_BY_NAME                     | 根据成员名字找 bean 对象，修改 mbd 的 propertyValues，不会考虑简单类型的成员 |
-| AUTOWIRE_BY_TYPE                     | 根据成员类型执行 resolveDependency 找到依赖注入的值，修改  mbd 的 propertyValues |
-| applyPropertyValues                  | 根据 mbd 的 propertyValues 进行依赖注入（即xml中 `<property name ref|value/>`） |
+![image-20230410221500572](interview_notes.assets/image-20230410221500572.png)
 
-**5.3 创建 bean - 初始化**
+1. 创建 bean 实例
 
-| **要点**              | **总结**                                                     |
-| --------------------- | ------------------------------------------------------------ |
-| 内置 Aware 接口的装配 | 包括 BeanNameAware，BeanFactoryAware 等                      |
-| 扩展 Aware 接口的装配 | 由 ApplicationContextAwareProcessor 解析，执行时机在  postProcessBeforeInitialization |
-| @PostConstruct        | 由 CommonAnnotationBeanPostProcessor 解析，执行时机在  postProcessBeforeInitialization |
-| InitializingBean      | 通过接口回调执行初始化                                       |
-| initMethod            | 根据 BeanDefinition 得到的初始化方法执行初始化，即 `<bean init-method>` 或 @Bean(initMethod) |
-| 创建 aop 代理         | 由 AnnotationAwareAspectJAutoProxyCreator 创建，执行时机在  postProcessAfterInitialization |
+| **要点**                                 | **总结**                                                     |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| 有自定义 TargetSource 的情况             | 由 AnnotationAwareAspectJAutoProxyCreator 创建代理返回       |
+| Supplier 方式创建 bean 实例              | 为 Spring 5.0 新增功能，方便编程方式创建  bean  实例         |
+| FactoryMethod 方式  创建 bean  实例      | ① 分成静态工厂与实例工厂；② 工厂方法若有参数，需要对工厂方法参数进行解析，利用  resolveDependency；③ 如果有多个工厂方法候选者，还要进一步按权重筛选 |
+| **AutowiredAnnotationBeanPostProcessor** | ① 优先选择带  @Autowired  注解的构造；② 若有唯一的带参构造，也会入选 |
+| mbd.getPreferredConstructors             | 选择所有公共构造，这些构造之间按权重筛选                     |
+| **采用默认构造**                         | 如果上面的后处理器和 BeanDefiniation 都没找到构造，采用默认构造，<u>即使是私有的</u> |
 
-**5.4 创建 bean - 注册可销毁 bean**
+2. 依赖注入
+
+| **要点**                                                     | **总结**                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **AutowiredAnnotationBeanPostProcessor(注解匹配)**           | 识别   `@Autowired`  及 `@Value`  标注的成员，封装为  **InjectionMetadata** 进行依赖注入 |
+| **CommonAnnotationBeanPostProcessor(注解匹配)**              | 识别   `@Resource`  标注的成员，封装为  **InjectionMetadata** 进行依赖注入 |
+| resolveDependency                                            | 用来查找要装配的值，可以识别：① Optional；② ObjectFactory 及 ObjectProvider；③ @Lazy  注解；④ @Value  注解（${  }, #{ }, 类型转换）；⑤ 集合类型（Collection，Map，数组等）；⑥ 泛型和  @Qualifier（用来区分类型歧义）；⑦ primary  及名字匹配（用来区分类型歧义） |
+| **AUTOWIRE_BY_NAME(根据名称匹配)**                           | 根据成员名字找 bean 对象，修改 mbd 的 propertyValues，不会考虑简单类型的成员 |
+| **AUTOWIRE_BY_TYPE(根据类型匹配)**                           | 根据成员类型执行 resolveDependency 找到依赖注入的值，修改  mbd 的 propertyValues |
+| **applyPropertyValues(精确指定**，即xml中的`<property name ref|value/>`) | 根据 mbd 的 propertyValues 进行依赖注入                      |
+
+3. 初始化
+
+| **要点**                  | **总结**                                                     |
+| ------------------------- | ------------------------------------------------------------ |
+| **内置 Aware 接口的装配** | 包括 BeanNameAware，BeanFactoryAware 等                      |
+| **扩展 Aware 接口的装配** | 由 ApplicationContextAwareProcessor 解析，执行时机在  postProcessBeforeInitialization |
+| **@PostConstruct**        | 由 CommonAnnotationBeanPostProcessor 解析，执行时机在  postProcessBeforeInitialization |
+| **InitializingBean**      | 通过接口回调执行初始化                                       |
+| **initMethod**            | 根据 BeanDefinition 得到的初始化方法执行初始化，即 `<bean init-method>` 或 @Bean(initMethod) |
+| **创建 aop 代理**         | 由 AnnotationAwareAspectJAutoProxyCreator 创建，执行时机在  postProcessAfterInitialization |
+
+4. 注册可销毁 bean
 
 在这一步判断并登记可销毁 bean
 
-* 判断依据
-  * 如果实现了 DisposableBean 或 AutoCloseable 接口，则为可销毁 bean
-  * 如果自定义了 destroyMethod，则为可销毁 bean
-  * 如果采用 @Bean 没有指定 destroyMethod，则采用自动推断方式获取销毁方法名（close，shutdown）
-  * 如果有 @PreDestroy 标注的方法
-* 存储位置
-  * singleton scope 的可销毁 bean 会存储于 beanFactory 的成员当中
-  * 自定义 scope 的可销毁 bean 会存储于对应的域对象当中
-  * prototype scope 不会存储，需要自己找到此对象销毁
-* 存储时都会封装为 DisposableBeanAdapter 类型对销毁方法的调用进行适配
+* 判断依据：
+  * 如果实现了 `DisposableBean` 或 `AutoCloseable` 接口，则为可销毁 bean；
+  * 如果自定义了 `destroyMethod`，则为可销毁 bean；
+  * 如果采用 @Bean 没有指定 destroyMethod，则采用自动推断方式获取销毁方法名（close，shutdown）；
+  * 如果有 `@PreDestroy `标注的方法；
+* 存储位置：
+  * singleton scope 的可销毁 bean 会存储于 **beanFactory 的成员**当中；
+  * 自定义 scope 的可销毁 bean 会存储于**对应的域对象**当中；
+  * prototype scope **不会存储**，需要自己找到此对象销毁；
 
-**6. 类型转换处理**
+存储时都会封装为 **DisposableBeanAdapter 类型**对销毁方法的调用进行适配（适配器模式）；
 
-* 如果 getBean 的 requiredType 参数与实际得到的对象类型不同，会尝试进行类型转换
+### 2.x.x 类型转换处理
 
-**7. 销毁 bean**
+当 getBean 的 requiredType 参数与实际得到的对象类型不同时，会尝试进行类型转换；
 
-* 销毁时机
-  * singleton bean 的销毁在 ApplicationContext.close 时，此时会找到所有 DisposableBean 的名字，逐一销毁
-  * 自定义 scope bean 的销毁在作用域对象生命周期结束时
-  * prototype bean 的销毁可以通过自己手动调用 AutowireCapableBeanFactory.destroyBean 方法执行销毁
-* 同一 bean 中不同形式销毁方法的调用次序
-  * 优先后处理器销毁，即 @PreDestroy
-  * 其次 DisposableBean 接口销毁
-  * 最后 destroyMethod 销毁（包括自定义名称，推断名称，AutoCloseable 接口 多选一）
+### 2.x.x 销毁 bean
+
+* 销毁时机：
+  * singleton bean 的销毁在 **ApplicationContext.close** 时，此时会找到所有 DisposableBean 的名字，逐一销毁；
+  * 自定义 scope bean 的销毁在**作用域对象生命周期结束**时；
+  * prototype bean 的销毁可以通过自己**手动调用 AutowireCapableBeanFactory.destroyBean** 方法执行销毁；
+* 同一 bean 中不同形式销毁方法的调用次序：
+  * 优先后处理器销毁，即 `@PreDestroy`；
+  * 其次` DisposableBean` 接口销毁；
+  * 最后` destroyMethod` 销毁（包括自定义名称，推断名称，AutoCloseable 接口 多选一）；
 
 
 
@@ -1942,9 +1988,9 @@ public class App60_4 {
 
 
 
-## 2.x Spring 事务失效
+## 2.x Spring 事务失效的场景
 
-**1. 抛出检查异常导致事务不能正确回滚**
+### 2.x.x 抛出检查异常导致事务不能正确回滚
 
 ```java
 @Service
@@ -1965,14 +2011,11 @@ public class Service1 {
 }
 ```
 
-* 原因：Spring 默认只会回滚非检查异常
+* 原因：Spring 默认只会回滚非检查异常；
 
-* 解法：配置 rollbackFor 属性
-  * `@Transactional(rollbackFor = Exception.class)`
+* 解法：配置 rollbackFor 属性`@Transactional(rollbackFor = Exception.class)`；
 
-
-
-**2. 业务方法内自己 try-catch 异常导致事务不能正确回滚**
+### 2.x.x 业务方法内自己 try-catch 异常导致事务不能正确回滚
 
 ```java
 @Service
@@ -1997,17 +2040,14 @@ public class Service2 {
 }
 ```
 
-* 原因：事务通知只有捉到了目标抛出的异常，才能进行后续的回滚处理，如果目标自己处理掉异常，事务通知无法知悉
+* 原因：
+  * <u>原始目标业务方法存在嵌套</u>：在声明式事务中，拿到的bean并不是原始的目标对象，而是一个代理对象，代理对象执行业务方法首先会去执行事务通知（环绕通知），在通知内部再去调用原始的目标对象方法；
+  * 事务通知只有捉到了目标抛出的异常，才能进行后续的回滚处理；如果目标自己处理掉异常，<u>事务通知无法知悉</u>；
+* 解法
+  * 异常原样抛出，在 catch 块添加 `throw new RuntimeException(e);`；
+  * 手动设置 TransactionStatus.setRollbackOnly()，在 catch 块添加 `TransactionInterceptor.currentTransactionStatus().setRollbackOnly();`；
 
-* 解法1：异常原样抛出
-  * 在 catch 块添加 `throw new RuntimeException(e);`
-
-* 解法2：手动设置 TransactionStatus.setRollbackOnly()
-  * 在 catch 块添加 `TransactionInterceptor.currentTransactionStatus().setRollbackOnly();`
-
-
-
-**3. aop 切面顺序导致导致事务不能正确回滚**
+### 2.x.x aop 切面顺序导致导致事务不能正确回滚
 
 ```java
 @Service
@@ -2046,14 +2086,12 @@ public class MyAspect {
 }
 ```
 
-* 原因：事务切面优先级最低，但如果自定义的切面优先级和他一样，则还是自定义切面在内层，这时若自定义切面没有正确抛出异常…
+* 原因：事务切面优先级最低，但如果自定义的切面优先级和他一样，则还是**自定义切面在内层**，这时若自定义切面没有正确抛出异常，则事务切面不能捕获，进而不能进行后续的处理；
+* 解法
+  * 同情况2 中的解法:1、2
+  * 调整切面顺序，在 MyAspect 上添加 `@Order(Ordered.LOWEST_PRECEDENCE - 1)` （不推荐）
 
-* 解法1、2：同情况2 中的解法:1、2
-* 解法3：调整切面顺序，在 MyAspect 上添加 `@Order(Ordered.LOWEST_PRECEDENCE - 1)` （不推荐）
-
-
-
-**4. 非 public 方法导致的事务失效**
+### 2.x.x 非 public 方法导致的事务失效
 
 ```java
 @Service
@@ -2073,10 +2111,10 @@ public class Service4 {
 }
 ```
 
-* 原因：Spring 为方法创建代理、添加事务通知、前提条件都是该方法是 public 的
-
-* 解法1：改为 public 方法
-* 解法2：添加 bean 配置如下（不推荐）
+* 原因：Spring 为方法创建代理、添加事务通知、前提条件都是该方法是 public 的；
+* 解法
+  * 改为 public 方法
+  * 添加 bean 配置如下（不推荐）
 
 ```java
 @Bean
@@ -2085,9 +2123,7 @@ public TransactionAttributeSource transactionAttributeSource() {
 }
 ```
 
-
-
-**5. 父子容器导致的事务失效**
+### 2.x.x 父子容器导致的事务失效
 
 ```java
 package day04.tx.app.service;
@@ -2163,7 +2199,7 @@ public class WebConfig {
 
 
 
-**6. 调用本类方法导致传播行为失效**
+### 2.x.x 调用本类方法导致传播行为失效
 
 ```java
 @Service
@@ -2232,9 +2268,7 @@ public class Service6 {
 }
 ```
 
-
-
-**7. @Transactional 没有保证原子行为**
+### 2.x.x @Transactional 没有保证原子行为
 
 ```java
 @Service
@@ -2271,7 +2305,7 @@ public class Service7 {
 
 
 
-**8. @Transactional 方法导致的 synchronized 失效**
+### 2.x.x @Transactional 方法导致的 synchronized 失效
 
 针对上面的问题，能否在方法上加 synchronized 锁来解决呢？
 
@@ -2692,6 +2726,29 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 
 
 # 三、数据库
+
+## 3.x 数据库的三大范式是什么
+
+- 第一范式：每个列都不可以再拆分；
+- 第二范式：在第一范式的基础上，非主键列完全依赖于主键，而不能是依赖于主键的一部分；
+- 第三范式：在第二范式的基础上，非主键列只依赖于主键，不依赖于其他非主键；
+
+范式化设计优缺点：
+
+- 优点:可以尽量得减少数据冗余， 使得更新快， 体积小
+- 缺点: 对于查询需要多个表进行关联， 减少写得效率增加读得效率， 更难进行索引优化
+
+## 3.x SQL的几种连接查询方式（内连接、外连接、全连接）
+
+- 内连接（inner join） ：
+  - 典型的联接运算，使用像 = 或 <> 之类的比较运算符）。包括相等联接和自然联接。
+  - 查出的是两张表的**交集**，两张表都有的才查出来 ；
+- 左外连接（left join）
+  - 以左表为主表（查询全部）， 右表为辅表（没有的显示null）；
+- 右外连接（right join）
+  - 以右表为主表（查询全部）， 左表为辅表（没有的显示null）；
+- 全连接（full join）
+  - 两个表的所有数据都展示出来；
 
 ## 3.x 事务的基本特性
 
@@ -3578,14 +3635,11 @@ RDB相关命令有两个：
 
 缺点：影响吞吐量、分布式锁设计较为复杂
 
-## 4.x 缓存原子性
+## 4.x Redis原子性
 
-**Redis 事务局限性**
+### 4.x.x  multi + exec 
 
-* 单条命令是原子性，这是由 redis 单线程保障的
-* 多条命令能否用 `multi + exec` 来保证其原子性呢？
-
-Redis 中 `multi + exec` 并不支持回滚，例如有初始数据如下
+单条命令是原子性，这是由 redis 单线程保障的，但是Redis 中 `multi + exec` 并不支持回滚，例如有初始数据如下：
 
 ```cmd
 set a 1000
@@ -3603,9 +3657,11 @@ incr c
 exec
 ```
 
-执行 `incr c` 时，由于字符串不支持自增导致此条命令失败，但之前的两条命令并不会回滚
+执行 `incr c` 时，由于字符串不支持自增导致此条命令失败，但<u>之前的两条命令并不会回滚</u>；
 
-更为重要的是，`multi + exec` 中的**读操作没有意义**，因为读的结果并不能赋值给临时变量，用于后续的写操作，既然 `multi + exec` 中读没有意义，就**无法保证读 + 写的原子性**，例如有初始数据如下
+更为重要的是，`multi + exec` 中的**读操作没有意义**，因为读的结果并不能赋值给临时变量，用于后续的写操作；
+
+既然 `multi + exec` 中读没有意义，就**无法保证读 + 写的原子性**，例如有初始数据如下：
 
 ```cmd
 set a 1000
@@ -3626,15 +3682,13 @@ exec
 
 但如果在 get 与 multi 之间其它客户端修改了 a 或 b，会造成丢失更新
 
+### 4.x.x 乐观锁保证原子性
 
+乐观锁的关键是`watch` 命令，用来**盯住 key**（一到多个），如果这些 key 在事务期间：
 
-**乐观锁保证原子性**
+* 没有被别的客户端修改，则 exec 才会成功；
 
-watch 命令，用来盯住 key（一到多个），如果这些 key 在事务期间：
-
-* 没有被别的客户端修改，则 exec 才会成功
-
-* 被别的客户端改了，则 exec 返回 nil
+* 被别的客户端改了，则 exec 返回 nil；
 
 还是上一个例子
 
@@ -3653,7 +3707,7 @@ exec
 
 
 
-**lua 脚本保证原子性**
+### 4.x.x lua 脚本保证原子性
 
 Redis 支持 lua 脚本，能保证 lua 脚本执行的原子性，可以取代 `multi + exec`
 
@@ -3683,11 +3737,11 @@ end
 
 
 
-## 4.x LRU Cache 实现
+## 4.x LRU Cache
 
-**LRU Cache 淘汰规则**
+### 4.x.x LRU Cache 淘汰规则
 
-Least Recently Used，将最近最少使用的 key 从缓存中淘汰掉。以链表法为例，最近访问的 key 移动到链表头，不常访问的自然靠近链表尾，如果超过容量、个数限制，移除尾部的
+Least Recently Used，将**最近最少**使用的 key 从缓存中淘汰掉。以链表法为例，最近访问的 key 移动到链表头，不常访问的自然靠近链表尾，如果超过容量、个数限制，移除尾部的
 
 * 例如有原始数据如下，容量规定为 3
 
@@ -3701,7 +3755,7 @@ Least Recently Used，将最近最少使用的 key 从缓存中淘汰掉。以�
 
   <img src="interview_notes.assets/image-20210902141912068.png" alt="image-20210902141912068" style="zoom:50%;" />
 
-**LRU Cache 链表实现**
+### 4.x.x LRU Cache 链表实现
 
 * 如何断开节点链接
 
@@ -3895,7 +3949,7 @@ public class LruCache2 extends LinkedHashMap<String, Object> {
 
 
 
-**Redis LRU Cache 实现**
+### 4.x.x Redis LRU Cache 实现
 
 Redis 采用了随机取样法，较之链表法占用内存更少，每次只抽 5 个 key，每个 key 记录了它们的**最近访问时间**，在这 5 个里挑出最老的移除
 
