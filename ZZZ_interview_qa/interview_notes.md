@@ -2413,49 +2413,49 @@ public class Service7 {
 
 ## 2.x Spring 注解
 
-**事务注解**
+### 2.x.x 事务注解
 
-* @EnableTransactionManagement，会额外加载 4 个 bean
+* `@EnableTransactionManagement`，会额外加载 4 个 bean
   * BeanFactoryTransactionAttributeSourceAdvisor 事务切面类
   * TransactionAttributeSource 用来解析事务属性
   * TransactionInterceptor 事务拦截器
   * TransactionalEventListenerFactory 事务监听器工厂
-* @Transactional
+* `@Transactional`
 
-**核心**
+### 2.x.x 核心
 
-* @Order
+* `@Order`：控制Bean的执行顺序；
 
-**切面**
+### 2.x.x 切面
 
-* @EnableAspectJAutoProxy
-  * 会加载 AnnotationAwareAspectJAutoProxyCreator，它是一个 bean 后处理器，用来创建代理
-  * 如果没有配置 @EnableAspectJAutoProxy，又需要用到代理（如事务）则会使用 InfrastructureAdvisorAutoProxyCreator 这个 bean 后处理器
+* `@EnableAspectJAutoProxy`
+  * 会加载 AnnotationAwareAspectJAutoProxyCreator，它是一个 bean 后处理器，用来创建代理；
+  * 如果没有配置 @EnableAspectJAutoProxy，又需要用到代理（如事务）则会使用 InfrastructureAdvisorAutoProxyCreator 这个 bean 后处理器；
 
-**组件扫描与配置类**
+### 2.x.x 组件扫描与配置类
 
-* @Component
+* `@Component`
 
-* @Controller
+  * `@Controller`
 
-* @Service
+  * `@Service`
 
-* @Repository
+  * `@Repository`
 
-* @ComponentScan
+* `@ComponentScan`
 
-* @Conditional 
+* `@Conditional `：做条件装配；
 
-* @Configuration
+* `@Configuration`
 
   * 配置类其实相当于一个工厂, 标注 @Bean 注解的方法相当于工厂方法
   * @Bean 不支持方法重载, 如果有多个重载方法, 仅有一个能入选为工厂方法
   * @Configuration 默认会为标注的类生成代理, 其目的是保证 @Bean 方法相互调用时, 仍然能保证其单例特性
   * @Configuration 中如果含有 BeanFactory 后处理器, 则实例工厂方法会导致 MyConfig 提前创建, 造成其依赖注入失败，解决方法是改用静态工厂方法或直接为 @Bean 的方法参数依赖注入, 针对 Mapper 扫描可以改用注解方式
 
-* @Bean
+* `@Bean`
 
-* @Import 
+* `@Import `
 
   * 四种用法
 
@@ -2474,60 +2474,60 @@ public class Service7 {
     * 不允许覆盖的情况下, 如何能够让 MyConfig(主配置类) 的配置优先? (虽然覆盖方式能解决)
     * 采用 DeferredImportSelector，因为它最后工作, 可以简单认为先解析 @Bean, 再 Import
 
-* @Lazy
+* `@Lazy`
 
-  * 加在类上，表示此类延迟实例化、初始化
-  * 加在方法参数上，此参数会以代理方式注入
+  * 加在类上，表示此类延迟实例化、初始化；
+  * 加在方法参数上，此参数会以代理方式注入，解决循环依赖；
 
-* @PropertySource
+* `@PropertySource`：读取properties文件存储见值信息；
 
-**依赖注入**
+### 2.x.x 依赖注入
 
-* @Autowired
-* @Qualifier
-* @Value
+* `@Autowired`
+* `@Qualifier`
+* `@Value`
 
-**mvc mapping**
+### 2.x.x mvc mapping
 
-* @RequestMapping，可以派生多个注解如 @GetMapping 等
+* `@RequestMapping`，可以派生多个注解如 @GetMapping 等
 
-**mvc rest**
+### 2.x.x mvc rest
 
-* @RequestBody
-* @ResponseBody，组合 @Controller =>  @RestController
-* @ResponseStatus
+* `@RequestBody`：将请求体中的JSON数据转换成Java对象；
+* `@ResponseBody`：将返回的Java对象转换成JSON数据写入到响应体；组合 @Controller =>  @RestController
+* `@ResponseStatus`：控制响应状态
 
-**mvc 统一处理**
+### 2.x.x mvc 统一处理
 
-* @ControllerAdvice，组合 @ResponseBody => @RestControllerAdvice
+* `@ControllerAdvice`，组合 @ResponseBody => @RestControllerAdvice
 * @ExceptionHandler
 
-**mvc 参数**
+### 2.x.x mvc 参数
 
-* @PathVariable
+* `@PathVariable`
 
-**mvc ajax**
+### 2.x.x mvc ajax
 
-* @CrossOrigin
+* `@CrossOrigin`
 
-**boot auto**
+### 2.x.x boot auto
 
-* @SpringBootApplication
-* @EnableAutoConfiguration
-* @SpringBootConfiguration
+* `@SpringBootApplication`
+* `@EnableAutoConfiguration`
+* `@SpringBootConfiguration`
 
-**boot condition**
+### 2.x.x boot condition
 
-* @ConditionalOnClass，classpath 下存在某个 class 时，条件才成立
-* @ConditionalOnMissingBean，beanFactory 内不存在某个 bean 时，条件才成立
-* @ConditionalOnProperty，配置文件中存在某个 property（键、值）时，条件才成立
+* `@ConditionalOnClass`，classpath 下存在某个 class 时，条件才成立
+* `@ConditionalOnMissingBean`，beanFactory 内不存在某个 bean 时，条件才成立
+* `@ConditionalOnProperty`，配置文件中存在某个 property（键、值）时，条件才成立
 
-**boot properties**
+### 2.x.x boot properties
 
-* @ConfigurationProperties，会将当前 bean 的属性与配置文件中的键值进行绑定
-* @EnableConfigurationProperties，会添加两个较为重要的 bean
-  * ConfigurationPropertiesBindingPostProcessor，bean 后处理器，在 bean 初始化前调用下面的 binder
-  * ConfigurationPropertiesBinder，真正执行绑定操作
+* `@ConfigurationProperties`，会将当前 bean 的属性与配置文件中的键值进行绑定
+* `@EnableConfigurationProperties`，会添加两个较为重要的 bean
+  * `ConfigurationPropertiesBindingPostProcessor`，bean 后处理器，在 bean 初始化前调用下面的 binder
+  * `ConfigurationPropertiesBinder`，真正执行绑定操作
 
 
 
