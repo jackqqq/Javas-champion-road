@@ -1351,6 +1351,53 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 
 # 二、框架
 
+## 2.x 什么是Spring框架的DI和IOC
+
+<u>IOC 控制反转</u>
+
+- IOC就是控制反转，是指创建对象的控制权的转移。以前创建对象的主动权和时机是由自己把控的，而现在这种**权力转移到Spring容器**中，并由容器根据配置文件去创建实例和管理各个实例之间的依赖关系；
+- 对象与对象之间松散耦合，也利于功能的复用；
+- 最直观的表达就是，IOC让对象的创建不用去new了，可以由spring自动生产；
+- 使用Java的反 射机制，根据配置文件在运行时动态的去创建对象以及管理对象，并调用对象的方法的
+- Spring的IOC有三种注入方式 ：**构造器注入、setter方法注入、根据注解注入**。
+
+>  IoC让相互协作的组件保持松散的耦合，而AOP编程允许你把遍布于应用各层的功能分离出来 形成可重用的功能组件。
+
+<u>DI 依赖注⼊</u>
+
+- 指Spring在创建对象的过程中，应用程序在运行时依赖IoC容器来动态注入对象需要的外部资源，会将对象依赖属性通过配置进行注⼊；
+- DI依赖注入，和控制反转是同一个 概念的不同角度的描述，DI不能单独存在，需要在IOC的基础上完成操作
+
+依赖注⼊(DI)和控制反转(IOC)是从不同的角度的描述的同⼀件事情，通过引⼊IOC容器，利用依赖关系注⼊的⽅式，实现对象之间的**解耦**
+
+## 2.x Spring中bean的scope作用域有哪些
+
+<u>singleton</u>
+
+- 单例，默认值，调用getBean方法返回是同⼀个对象，对象实例会被缓存起来；
+- 效率高，当⼀个bean被标识为singleton时候，spring的IOC容器中只会存在唯一的bean；
+- 单例的模式由BeanFactory自身来维护；
+
+<u>prototype</u>
+
+- 多例，调⽤getBean方法创建不同的对象，为每一个bean请求提供一个实例；
+- 会频繁的创建和销毁对象造成很大的开销；
+
+<u>其他（WebApplicationContext）</u> 
+
+- request：为每一个网络请求创建一个实例，在请求完成以后，bean会失效并被垃圾回收器回收 ；
+- session：与request范围类似，确保每个session中有一个bean的实例，在session过期后， bean会随之失效；
+- global session（基本不用）；
+
+## 2.x Spring基于xml注入bean的几种方式
+
+- Set方法注入；
+- 构造器注入：
+  - 通过index设置参数的位置；
+  - 通过type设置参数类型；
+- *静态工厂注入；*
+- *实例工厂；*
+
 ## 2.x Spring refresh
 
 ### 2.x.x Spring refresh 概述
@@ -1667,330 +1714,116 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
   * 其次` DisposableBean` 接口销毁；
   * 最后` destroyMethod` 销毁（包括自定义名称，推断名称，AutoCloseable 接口 多选一）；
 
+## 2.x Spring 中 ApplicationContext 和 BeanFactory 的区别
 
+<u>包目录不同</u>
 
-## 2.x Spring bean 循环依赖
+- spring-beans.jar 中 org.springframework.beans.factory.BeanFactory 
+- spring-context.jar 中 org.springframework.context.ApplicationContext 
 
-**要求**
+<u>国际化</u>
 
-* 掌握单例 set 方式循环依赖的原理
-* 掌握其它循环依赖的解决方法
+- BeanFactory 是不支持国际化功能的，因为 BeanFactory 没有扩展 Spring 中 MessageResource 接口；
+- 相反，由于 ApplicationContext 扩展了 MessageResource 接口，因而具有消息处理的能力 （i18N）；
 
-**循环依赖的产生**
+<u>强大的事件机制（Event）</u> 
 
-* 首先要明白，bean 的创建要遵循一定的步骤，必须是创建、注入、初始化三步，这些顺序不能乱
+- 基本上牵涉到事件（Event）方面的设计，就离不开观察者模式；
+- ApplicationContext 的事件机制 主要通过 ApplicationEvent 和 ApplicationListener 这两个接口来提供的，和 Java swing 中的事件机制一样。即当 ApplicationContext 中发布一个事件时，所有扩展了 ApplicationListener 的 Bean 都将接受到这个事件，并进行相应的处理。 
 
-<img src="interview_notes.assets/image-20210903085238916.png" alt="image-20210903085238916" style="zoom:50%;" />
+<u>底层资源的访问</u>
 
-* set 方法（包括成员变量）的循环依赖如图所示
+- ApplicationContext 扩展了 ResourceLoader（资源加载器）接口，从而可以用来加载多个 Resource；
+- BeanFactory 是没有扩展 ResourceLoader；
 
-  * 可以在【a 创建】和【a set 注入 b】之间加入 b 的整个流程来解决
-  * 【b set 注入 a】 时可以成功，因为之前 a 的实例已经创建完毕
+<u>对 Web 应用的支持</u> 
 
-  * a 的顺序，及 b 的顺序都能得到保障
+- BeanFactory 通常以编程的方式被创建；
+- ApplicationContext 能以声明的方式创建，如使用 ContextLoader，也可以使用 ApplicationContext 的实现方式之一，以编程的方式创建 ApplicationContext 实例。 
 
-<img src="interview_notes.assets/image-20210903085454603.png" alt="image-20210903085454603" style="zoom: 33%;" />
+<u>延迟加载</u> 
 
-* 构造方法的循环依赖如图所示，显然无法用前面的方法解决
+- BeanFactroy 采用的是延迟加载形式来注入 Bean 的，即只有在使用到某个 Bean 时(调用 getBean())，才对该 Bean 进行加载实例化。这样，我们就不能发现一些存在的 spring 的配置 问题。而 ApplicationContext 则相反，它是在容器启动时，一次性创建了所有的 Bean。这 样，在容器启动时，我们就可以发现 Spring 中存在的配置错误；
+- BeanFactory 和 ApplicationContext 都支持 BeanPostProcessor、 BeanFactoryPostProcessor 的使用。两者之间的区别是：BeanFactory 需要手动注册，而 ApplicationContext 则是自动注册；
+- 可以看到，ApplicationContext 继承了 BeanFactory，BeanFactory 是 Spring 中比较原始的 Factory，它不支持 AOP、Web 等 Spring 插件。而 ApplicationContext 不仅包含了 BeanFactory 的所有功能，还支持 Spring 的各种插件，还以一种面向框架的方式工作以及对上下文进行分层和实 现继承；
+- BeanFactory 是 Spring 框架的基础设施，面向 Spring 本身；而 ApplicationContext 面向使用 Spring 的开发者，相比 BeanFactory 提供了更多面向实际应用的功能，几乎所有场合都可以直接使 用 ApplicationContext，而不是底层的 BeanFactory；
 
-<img src="interview_notes.assets/image-20210903085906315.png" alt="image-20210903085906315" style="zoom: 50%;" />
+<u>常用容器</u> 
 
-**构造循环依赖的解决**
+- BeanFactory 类型的有 XmlBeanFactory，它可以根据 XML 文件中定义的内容，创建相应的 Bean。
+-  ApplicationContext 类型的常用容器有：
+  - ClassPathXmlApplicationContext：从 ClassPath 的 XML 配置文件中读取上下文，并生成上 下文定义。应用程序上下文从程序环境变量中取得;
+  - FileSystemXmlApplicationContext：由文件系统中的 XML 配置文件读取上下文;
+  - XmlWebApplicationContext：由 Web 应用的 XML 文件读取上下文,例如我们在 Spring MVC 使用的情况;
 
-* 思路1
-  * a 注入 b 的代理对象，这样能够保证 a 的流程走通
-  * 后续需要用到 b 的真实对象时，可以通过代理间接访问
+## 2.x Spring 框架中的单例 Bean 是线程安全的么
 
-<img src="interview_notes.assets/image-20210903091627659.png" alt="image-20210903091627659" style="zoom: 50%;" />
+Spring 框架并没有对单例 Bean 进行任何多线程的封装处理，所以关于单例 Bean 的线程安全和并发问题，需要开发者自行去搞定，并不是 Spring 应该去关心的；
 
-* 思路2
-  * a 注入 b 的工厂对象，让 b 的实例创建被推迟，这样能够保证 a 的流程先走通
-  * 后续需要用到 b 的真实对象时，再通过 ObjectFactory 工厂间接访问
+Spring 应该做的是，提供根据配置，创 建单例 Bean 或多例 Bean 的功能。 
 
-<img src="interview_notes.assets/image-20210903091743366.png" alt="image-20210903091743366" style="zoom:50%;" />
+当然，但实际上，大部分的 Spring Bean 并没有可变的状态，所以在某种程度上说 Spring 的单例 Bean 是线程安全的。如果你的 Bean 有多种状态的话，就需要自行保证线程安全。最浅显的解决办 法，就是将多态 Bean 的作用域（Scope）由 Singleton 变更为 Prototype
 
-* 示例1：用 @Lazy 为构造方法参数生成代理
 
-```java
-public class App60_1 {
 
-    static class A {
-        private static final Logger log = LoggerFactory.getLogger("A");
-        private B b;
+## 2.x AOP
 
-        public A(@Lazy B b) {
-            log.debug("A(B b) {}", b.getClass());
-            this.b = b;
-        }
+### 2.x.x  什么是AOP
 
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
+AOP（Aspect-Oriented Programming，面向切面编程）能够将那些**与业务无关**，却**为业务模块所共同调用**的逻辑或责任（例如<u>事务处理、日志管理、权限控制</u>等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可扩展性和可维护性；
 
-    static class B {
-        private static final Logger log = LoggerFactory.getLogger("B");
-        private A a;
+Spring AOP是基于动态代理的：
 
-        public B(A a) {
-            log.debug("B({})", a);
-            this.a = a;
-        }
+- 如果要代理的对象实现了某个接口，那么Spring AOP就会使用JDK 动态代理去创建代理对象；
+- 对于没有实现接口的对象，就无法使用JDK动态代理，转而使用CGlib 动态代理生成一个被代理对象的子类来作为代理；
 
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
+![image-20230420231442937](interview_notes.assets/image-20230420231442937.png)
 
-    public static void main(String[] args) {
-        GenericApplicationContext context = new GenericApplicationContext();
-        context.registerBean("a", A.class);
-        context.registerBean("b", B.class);
-        AnnotationConfigUtils.registerAnnotationConfigProcessors(context.getDefaultListableBeanFactory());
-        context.refresh();
-        System.out.println();
-    }
-}
-```
+*注意：图中的implements和extend。即一个是接口，一个是实现类。*
 
-* 示例2：用 ObjectProvider 延迟依赖对象的创建
+当然也可以使用AspectJ，Spring AOP中已经集成了AspectJ，AspectJ应该算得上是Java生态系统中 最完整的AOP框架了。使用AOP之后我们可以把一些通用功能抽象出来，在需要用到的地方直接使用即可，这样可以大大简化代码量。我们需要增加新功能也方便，提高了系统的扩展性。日志功能、事务管理和权限管理等场景都用到了AOP。
 
-```java
-public class App60_2 {
+### 2.x.x Spring AOP和AspectJ AOP有什么区别
 
-    static class A {
-        private static final Logger log = LoggerFactory.getLogger("A");
-        private ObjectProvider<B> b;
+<u>Spring AOP</u>
 
-        public A(ObjectProvider<B> b) {
-            log.debug("A({})", b);
-            this.b = b;
-        }
-
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
-
-    static class B {
-        private static final Logger log = LoggerFactory.getLogger("B");
-        private A a;
-
-        public B(A a) {
-            log.debug("B({})", a);
-            this.a = a;
-        }
-
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
-
-    public static void main(String[] args) {
-        GenericApplicationContext context = new GenericApplicationContext();
-        context.registerBean("a", A.class);
-        context.registerBean("b", B.class);
-        AnnotationConfigUtils.registerAnnotationConfigProcessors(context.getDefaultListableBeanFactory());
-        context.refresh();
-
-        System.out.println(context.getBean(A.class).b.getObject());
-        System.out.println(context.getBean(B.class));
-    }
-}
-```
-
-* 示例3：用 @Scope 产生代理
-
-```java
-public class App60_3 {
-
-    public static void main(String[] args) {
-        GenericApplicationContext context = new GenericApplicationContext();
-        ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(context.getDefaultListableBeanFactory());
-        scanner.scan("com.itheima.app60.sub");
-        context.refresh();
-        System.out.println();
-    }
-}
-```
-
-
-
-```java
-@Component
-class A {
-    private static final Logger log = LoggerFactory.getLogger("A");
-    private B b;
-
-    public A(B b) {
-        log.debug("A(B b) {}", b.getClass());
-        this.b = b;
-    }
+- 属于运行时增强；
+- 基于代理（Proxying）；
+- Spring AOP已经集成了AspectJ；
 
-    @PostConstruct
-    public void init() {
-        log.debug("init()");
-    }
-}
-```
+<u>AspectJ</u>
 
+- 编译时增强；
+- 基于字节码操作（Bytecode Manipulation）；
+- AspectJ相比于Spring AOP功能更加强大，但是Spring AOP相对来说更简单；
 
+ 如果我们的切面比较少，那么两者性能差异不大；但是当切面太多的话，最好选择AspectJ，它比 SpringAOP快很多；
 
-```java
-@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@Component
-class B {
-    private static final Logger log = LoggerFactory.getLogger("B");
-    private A a;
+### 2.x.x 在Spring AOP 中，关注点和横切关注的区别是什么
 
-    public B(A a) {
-        log.debug("B({})", a);
-        this.a = a;
-    }
+### 2.x.x AOP中常见的概念
 
-    @PostConstruct
-    public void init() {
-        log.debug("init()");
-    }
-}
-```
+### 2.x.x 什么是通知？有什么类型？
 
+通知是个在方法执行前或执行后要做的**动作**，实际上是程序执行时要**通过SpringAOP框架触发的代码段**；
 
+Spring切面可以应用五种类型的通知： 
 
-* 示例4：用 Provider 接口解决，原理上与 ObjectProvider 一样，Provider 接口是独立的 jar 包，需要加入依赖
+- <u>before</u>：前置通知，在一个方法执行前被调用；
+- <u>after</u>: 在方法执行之后调用的通知，无论方法执行是否成功；
+- <u>after-returning</u>: 仅当方法成功完成后执行的通知；
+- <u>after-throwing</u>: 在方法抛出异常退出时执行的通知；
+-  <u>around</u>: 在方法执行之前和之后调用的通知；
 
-```xml
-<dependency>
-    <groupId>javax.inject</groupId>
-    <artifactId>javax.inject</artifactId>
-    <version>1</version>
-</dependency>
-```
+### 2.x.x 什么是静态代理
 
 
 
-```java
-public class App60_4 {
+## 2.x Spring 事务
 
-    static class A {
-        private static final Logger log = LoggerFactory.getLogger("A");
-        private Provider<B> b;
+### 2.x.x Spring 事务失效的场景
 
-        public A(Provider<B> b) {
-            log.debug("A({}})", b);
-            this.b = b;
-        }
-
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
-
-    static class B {
-        private static final Logger log = LoggerFactory.getLogger("B");
-        private A a;
-
-        public B(A a) {
-            log.debug("B({}})", a);
-            this.a = a;
-        }
-
-        @PostConstruct
-        public void init() {
-            log.debug("init()");
-        }
-    }
-
-    public static void main(String[] args) {
-        GenericApplicationContext context = new GenericApplicationContext();
-        context.registerBean("a", A.class);
-        context.registerBean("b", B.class);
-        AnnotationConfigUtils.registerAnnotationConfigProcessors(context.getDefaultListableBeanFactory());
-        context.refresh();
-
-        System.out.println(context.getBean(A.class).b.get());
-        System.out.println(context.getBean(B.class));
-    }
-}
-```
-
-
-
-### 2.x.x 解决 set 循环依赖的原理
-
-**一级缓存**
-
-<img src="interview_notes.assets/image-20210903100752165.png" alt="image-20210903100752165" style="zoom:80%;" />
-
-作用是保证单例对象仅被创建一次
-
-* 第一次走 `getBean("a")` 流程后，最后会将成品 a 放入 singletonObjects 一级缓存
-* 后续再走 `getBean("a")` 流程时，先从一级缓存中找，这时已经有成品 a，就无需再次创建
-
-**一级缓存与循环依赖**
-
-<img src="interview_notes.assets/image-20210903100914140.png" alt="image-20210903100914140" style="zoom:80%;" />
-
-一级缓存无法解决循环依赖问题，分析如下
-
-* 无论是获取 bean a 还是获取 bean b，走的方法都是同一个 getBean 方法，假设先走 `getBean("a")`
-* 当 a 的实例对象创建，接下来执行 `a.setB()` 时，需要走 `getBean("b")` 流程，红色箭头 1
-* 当 b 的实例对象创建，接下来执行 `b.setA()` 时，又回到了 `getBean("a")` 的流程，红色箭头 2
-* 但此时 singletonObjects 一级缓存内没有成品的 a，陷入了死循环
-
-**二级缓存**
-
-<img src="interview_notes.assets/image-20210903101849924.png" alt="image-20210903101849924" style="zoom:80%;" />
-
-解决思路如下：
-
-* 再增加一个 singletonFactories 缓存
-* 在依赖注入前，即 `a.setB()` 以及 `b.setA()` 将 a 及 b 的半成品对象（未完成依赖注入和初始化）放入此缓存
-* 执行依赖注入时，先看看 singletonFactories 缓存中是否有半成品的对象，如果有拿来注入，顺利走完流程
-
-对于上面的图
-
-* `a = new A()` 执行之后就会把这个半成品的 a 放入 singletonFactories 缓存，即 `factories.put(a)`
-* 接下来执行 `a.setB()`，走入 `getBean("b")` 流程，红色箭头 3
-* 这回再执行到 `b.setA()` 时，需要一个 a 对象，有没有呢？有！
-* `factories.get()` 在 singletonFactories  缓存中就可以找到，红色箭头 4 和 5
-* b 的流程能够顺利走完，将 b 成品放入 singletonObject 一级缓存，返回到 a 的依赖注入流程，红色箭头 6
-
-**二级缓存与创建代理**
-
-<img src="interview_notes.assets/image-20210903103030877.png" alt="image-20210903103030877" style="zoom:80%;" />
-
-二级缓存无法正确处理循环依赖并且包含有代理创建的场景，分析如下
-
-* spring 默认要求，在 `a.init` 完成之后才能创建代理 `pa = proxy(a)`
-* 由于 a 的代理创建时机靠后，在执行 `factories.put(a)` 向 singletonFactories 中放入的还是原始对象
-* 接下来箭头 3、4、5 这几步 b 对象拿到和注入的都是原始对象
-
-**三级缓存**
-
-![image-20210903103628639](interview_notes.assets/image-20210903103628639.png)
-
-简单分析的话，只需要将代理的创建时机放在依赖注入之前即可，但 spring 仍然希望代理的创建时机在 init 之后，只有出现循环依赖时，才会将代理的创建时机提前。所以解决思路稍显复杂：
-
-* 图中 `factories.put(fa)` 放入的既不是原始对象，也不是代理对象而是工厂对象 fa
-* 当检查出发生循环依赖时，fa 的产品就是代理 pa，没有发生循环依赖，fa 的产品是原始对象 a
-* 假设出现了循环依赖，拿到了 singletonFactories 中的工厂对象，通过在依赖注入前获得了 pa，红色箭头 5
-* 这回 `b.setA()` 注入的就是代理对象，保证了正确性，红色箭头 7
-* 还需要把 pa 存入新加的 earlySingletonObjects 缓存，红色箭头 6
-* `a.init` 完成后，无需二次创建代理，从哪儿找到 pa 呢？earlySingletonObjects 已经缓存，蓝色箭头 9
-
-当成品对象产生，放入 singletonObject 后，singletonFactories 和 earlySingletonObjects 就中的对象就没有用处，清除即可
-
-
-
-## 2.x Spring 事务失效的场景
-
-### 2.x.x 抛出检查异常导致事务不能正确回滚
+<u>抛出检查异常导致事务不能正确回滚</u>
 
 ```java
 @Service
@@ -2015,7 +1848,7 @@ public class Service1 {
 
 * 解法：配置 rollbackFor 属性`@Transactional(rollbackFor = Exception.class)`；
 
-### 2.x.x 业务方法内自己 try-catch 异常导致事务不能正确回滚
+<u>业务方法内自己 try-catch 异常导致事务不能正确回滚</u>
 
 ```java
 @Service
@@ -2047,7 +1880,7 @@ public class Service2 {
   * 异常原样抛出，在 catch 块添加 `throw new RuntimeException(e);`；
   * 手动设置 TransactionStatus.setRollbackOnly()，在 catch 块添加 `TransactionInterceptor.currentTransactionStatus().setRollbackOnly();`；
 
-### 2.x.x aop 切面顺序导致导致事务不能正确回滚
+<u>aop 切面顺序导致导致事务不能正确回滚</u>
 
 ```java
 @Service
@@ -2091,7 +1924,7 @@ public class MyAspect {
   * 同情况2 中的解法:1、2
   * 调整切面顺序，在 MyAspect 上添加 `@Order(Ordered.LOWEST_PRECEDENCE - 1)` （不推荐）
 
-### 2.x.x 非 public 方法导致的事务失效
+<u>非 public 方法导致的事务失效</u>
 
 ```java
 @Service
@@ -2123,7 +1956,7 @@ public TransactionAttributeSource transactionAttributeSource() {
 }
 ```
 
-### 2.x.x 父子容器导致的事务失效
+<u>父子容器导致的事务失效</u>
 
 对于Service：
 
@@ -2202,7 +2035,7 @@ public class WebConfig {
 
 如果是Spring Boot则不会出现这种情况；
 
-### 2.x.x 调用本类方法导致传播行为失效
+<u>调用本类方法导致传播行为失效</u>
 
 ```java
 @Service
@@ -2269,7 +2102,7 @@ public class Service6 {
 }
 ```
 
-### 2.x.x @Transactional 没有保证原子行为
+<u>@Transactional 没有保证原子行为</u>
 
 ```java
 @Service
@@ -2342,7 +2175,52 @@ public class Service7 {
   * synchronized 范围应扩大至代理方法调用
   * 使用 select … for update 替换 select
 
+### 2.x.x 事务的隔离级别
 
+同MySQL；
+
+### 2.x.x Spring 事务的传播级别
+
+Spring事务定义了7种传播机制：
+
+-  PROPAGATION_REQUIRED：默认的Spring事物传播级别，若当前存在事务，则加入该事务，若不存在事务，则新建一个事务；
+- PAOPAGATION_REQUIRE_NEW：若当前没有事务，则新建一个事务。若当前存在事务，则新建 一个事务，新老事务相互独立。外部事务抛出异常回滚不会影响内部事务的正常提交；
+- PROPAGATION_NESTED：如果当前存在事务，则嵌套在当前事务中执行。如果当前没有事务， 则新建一个事务，类似于REQUIRE_NEW；
+- PROPAGATION_SUPPORTS：支持当前事务，若当前不存在事务，以非事务的方式执行；
+- PROPAGATION_NOT_SUPPORTED：以非事务的方式执行，若当前存在事务，则把当前事务挂 起；
+- PROPAGATION_MANDATORY：强制事务执行，若当前不存在事务，则抛出异常；
+- PROPAGATION_NEVER:以非事务的方式执行，如果当前存在事务，则抛出异常；
+
+ Spring事务传播级别一般不需要定义，默认就是PROPAGATION_REQUIRED，除非在嵌套事务的情 况下需要重点了解；
+
+### 2.x.x Spring 事务实现方式
+
+编程式事务管理：这意味着你可以通过编程的方式管理事务，这种方式带来了很大的灵活性，但很 难维护；
+
+声明式事务管理：这种方式意味着你可以将事务管理和业务代码分离。你只需要通过注解或者XML 配置管理事务；
+
+### 2.x.x Spring框架的事务管理有哪些优点
+
+- 为不同的事务API(如JTA, JDBC, Hibernate, JPA, 和JDO)提供了统一的编程模型；
+- 为编程式事务 管理提供了一个简单的API而非一系列复杂的事务API(如JTA).它支持声明式事务管理；
+- 可以和 Spring 的多种数据访问技术很好的融合；
+
+### 2.x.x 事务三要素是什么
+
+- 数据源：表示具体的事务性资源，是事务的真正处理者，如MySQL等；
+- 事务管理器：像一个大管家，从整体上管理事务的处理过程，如打开、提交、回滚等；
+- 事务应用和属性配置：像一个标识符，表明哪些方法要参与事务，如何参与事务，以及一些相关属 性如隔离级别、超时时间等。
+
+### 2.x.x 事务注解的本质是什么
+
+`@Transactional` 这个注解仅仅是一些（和事务相关的）元数据，在运行时被事务基础设施读取消费，**并使用这些元数据来配置bean的事务行为**，大致来说具有两方面功能：
+
+- 表明该方法要参 与事务；
+- 配置相关属性来定制事务的参与方式和运行行为；
+
+声明式事务主要是得益于Spring AOP，使用一个事务拦截器，在方法调用的前后/周围进行事务性 增强（advice），来驱动事务完成；
+
+`@Transactional`注解既可以标注在类上，也可以标注在方法上。当在类上时，默认应用到类里的所 有方法。如果此时方法上也标注了，则方法上的优先级高。 另外注意方法一定要是public的；
 
 ## 2.x Spring MVC 执行流程
 
@@ -2529,45 +2407,71 @@ public class Service7 {
   * `ConfigurationPropertiesBindingPostProcessor`，bean 后处理器，在 bean 初始化前调用下面的 binder
   * `ConfigurationPropertiesBinder`，真正执行绑定操作
 
+## 2.x @Configuration注解的理解
 
+使用`@Configuration`标注的类是配置类，配置类相当于一个工厂，标注`@Bean`注解的方法相当于工厂方法；
+
+- `@Bean`不支持方法重载，如果有多个重载方法，仅有一个能入选为工厂方法；
+- `@Configuration`默认会为标注的类生成代理，其目的是保证@Bean方法相互调用时，仍然能够保证其单例特性；（如果设置了@Configuration注解的proxyBeanMethod为false则不会生成代理）
+
+## 2.x @Import注解的理解
+
+`@Import`注解和`@CompentScan`注解的作用类似，`@CompentScan`注解用来进行包扫描，将包中扫描到的特殊注解的类（Bean）加入到Spring容器进行管理；
+
+`@Import`注解则是通过指定一个类型来找到类，将类交给Spring容器进行管理；
+
+//   @Import(Bean1.class) // 1. 引入单个 bean
+
+//   @Import(OtherConfig.class) // 2. 引入一个配置类
+
+  @Import(MySelector.class) // 3. 通过 Selector 引入多个类
+
+//   @Import(MyRegistrar.class) // 4. 通过 beanDefinition 注册器
+
+  // 1. 同一配置类中, @Import 先解析  @Bean 后解析
+
+  // 2. 同名定义, 默认后面解析的会覆盖前面解析的
+
+  // 3. 不允许覆盖的情况下, 如何能够让 MyConfig(主配置类) 的配置优先? (虽然覆盖方式能解决)
+
+  // 4. DeferredImportSelector 最后工作, 可以简单认为先解析 @Bean, 再 Import
 
 ## 2.x SpringBoot 自动配置原理
 
-**自动配置原理**
+`@SpringBootConfiguration` 是一个组合注解，由 `@ComponentScan`、`@EnableAutoConfiguration` 和 `@SpringBootConfiguration` 组成
 
-@SpringBootConfiguration 是一个组合注解，由 @ComponentScan、@EnableAutoConfiguration 和 @SpringBootConfiguration 组成
+```java
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+```
 
-1. @SpringBootConfiguration 与普通 @Configuration 相比，唯一区别是前者要求整个 app 中只出现一次
-2. @ComponentScan
-   * excludeFilters - 用来在组件扫描时进行排除，也会排除自动配置类
+- `@SpringBootConfiguration` ：与普通 `@Configuration` 类似，唯一区别是前者要求整个 app 中**只出现一次**；
+- `@ComponentScan`：用来进行包扫描，excludeFilters用来在组件扫描时进行排除，也会排除自动配置类； 
+- `@EnableAutoConfiguration `也是一个组合注解，由下面注解组成
+  - `@AutoConfigurationPackage` ：用来记录所标注类的包名，此即扫描的起始包`package org.springframework.boot.autoconfigure;`，后续可以使用工具类AutoConfigurationPackages.get()方法来获得；
+  - `@Import(AutoConfigurationImportSelector.class)` 用来加载 `META-INF/spring.factories` 中的自动配置类；
 
-3. @EnableAutoConfiguration 也是一个组合注解，由下面注解组成
-   * @AutoConfigurationPackage – 用来记住扫描的起始包
-   * @Import(AutoConfigurationImportSelector.class) 用来加载 `META-INF/spring.factories` 中的自动配置类
-
-**为什么不使用 @Import 直接引入自动配置类**
+## 2.x SpringBoot 自动配置为什么不使用 @Import 直接引入自动配置类
 
 有两个原因：
 
-1. 让主配置类和自动配置类变成了强耦合，主配置类不应该知道有哪些从属配置
-2. 直接用 `@Import(自动配置类.class)`，引入的配置解析优先级较高，自动配置类的解析应该在主配置没提供时作为默认配置
+- 直接用 `@Import(自动配置类.class)`让主配置类和自动配置类变成了**强耦合**，主配置类不应该知道有哪些从属配置；
+- 直接用 `@Import(自动配置类.class)`，引入的配置解析优先级较高，自动配置类的解析应该在主配置没提供时作为默认配置；
 
 因此，采用了 `@Import(AutoConfigurationImportSelector.class)`
 
-* 由 `AutoConfigurationImportSelector.class` 去读取 `META-INF/spring.factories` 中的自动配置类，实现了弱耦合。
-* 另外 `AutoConfigurationImportSelector.class` 实现了 DeferredImportSelector 接口，让自动配置的解析晚于主配置的解析
+* 由 `AutoConfigurationImportSelector.class` 去读取 `META-INF/spring.factories` 中的自动配置类，实现了弱耦合；
+* 另外 `AutoConfigurationImportSelector.class` 实现了 `DeferredImportSelector` 接口，让自动配置的解析晚于主配置的解析；
 
 
 
 ## 2.x Spring 中的设计模式
 
-**要求**
+### 2.x.x 单例模式
 
-* 掌握 Spring 中常见的设计模式
-
-**1. Spring 中的 Singleton**
-
-请大家区分 singleton pattern 与 Spring 中的 singleton bean
+区分 singleton pattern 与 Spring 中的 singleton bean
 
 * 根据单例模式的目的 *Ensure a class only has one instance, and provide a global point of access to it* 
 * 显然 Spring 中的 singleton bean 并非实现了单例模式，singleton bean 只能保证每个容器内，相同 id 的 bean 单实例
@@ -2578,9 +2482,9 @@ public class Service7 {
   * org.springframework.core.annotation.AnnotationAwareOrderComparator#INSTANCE
   * org.springframework.core.OrderComparator#INSTANCE
 
-**2. Spring 中的 Builder**
+### 2.x.x 构建器模式
 
-定义 *Separate the construction of a complex object from its representation so that the same construction process can create different representations* 
+定义：*Separate the construction of a complex object from its representation so that the same construction process can create different representations* 
 
 它的主要亮点有三处：
 
@@ -2600,9 +2504,9 @@ Spring 中体现 Builder 模式的地方：
 
 * org.springframework.http.ResponseEntity.BodyBuilder
 
-**3. Spring 中的 Factory Method**
+### 2.x.x 工厂方法模式
 
-定义 *Define an interface for creating an object, but let subclasses decide which class to instantiate. Factory Method lets a class defer instantiation to subclasses* 
+定义：*Define an interface for creating an object, but let subclasses decide which class to instantiate. Factory Method lets a class defer instantiation to subclasses*，主要是用来实现接口和实现相分离，降低耦合；
 
 根据上面的定义，Spring 中的 ApplicationContext 与 BeanFactory 中的 getBean 都可以视为工厂方法，它隐藏了 bean （产品）的创建过程和具体实现
 
@@ -2616,9 +2520,9 @@ Spring 中其它工厂：
 
 前两种工厂主要封装第三方的 bean 的创建过程，后两种工厂可以推迟 bean 创建，解决循环依赖及单例注入多例等问题
 
-**4. Spring 中的 Adapter**
+### 2.x.x 适配器模式
 
-定义 *Convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces* 
+定义：*Convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces* ，一套接口适配成调用者所期望的接口；
 
 典型的实现有两处：
 
@@ -2629,9 +2533,9 @@ Spring 中其它工厂：
   * 它们的处理方法都不一样，为了统一调用，必须适配为 HandlerAdapter 接口
 * org.springframework.beans.factory.support.DisposableBeanAdapter – 因为销毁方法多种多样，因此都要适配为 DisposableBean 来统一调用销毁方法 
 
-**5. Spring 中的 Composite**
+### 2.x.x 组合模式
 
-定义 *Compose objects into tree structures to represent part-whole hierarchies. Composite lets clients treat individual objects and compositions of objects uniformly* 
+定义：*Compose objects into tree structures to represent part-whole hierarchies. Composite lets clients treat individual objects and compositions of objects uniformly* 
 
 典型实现有：
 
@@ -2640,38 +2544,40 @@ Spring 中其它工厂：
 * org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
 * org.springframework.web.servlet.view.ViewResolverComposite
 
-composite 对象的作用是，将分散的调用集中起来，统一调用入口，它的特征是，与具体干活的实现实现同一个接口，当调用 composite 对象的接口方法时，其实是委托具体干活的实现来完成
+composite 对象的作用是，将**分散的调用集中起来，统一调用入口**，它的特征是，与具体干活的实现实现同一个接口，当调用 composite 对象的接口方法时，其实是委托具体干活的实现来完成
 
-**6. Spring 中的 Decorator**
+### 2.x.x 装饰器模式
 
-定义 *Attach additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality* 
+定义：*Attach additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality* ，对一个对象动态地进行增强；
+
+主要用于由子类扩展方式来实现功能增强的问题，避免继承很多用不到的方法；
 
 典型实现：
 
 * org.springframework.web.util.ContentCachingRequestWrapper
 
-**7. Spring 中的 Proxy**
+### 2.x.x 代理模式
 
 定义 *Provide a surrogate or placeholder for another object to control access to it* 
 
-装饰器模式注重的是功能增强，避免子类继承方式进行功能扩展，而代理模式更注重控制目标的访问
+**装饰器模式注重的是功能增强**，避免子类继承方式进行功能扩展，**而代理模式更注重控制目标的访问**；
 
 典型实现：
 
 * org.springframework.aop.framework.JdkDynamicAopProxy
 * org.springframework.aop.framework.ObjenesisCglibAopProxy
 
-**8. Spring 中的 Chain of Responsibility**
+### 2.x.x 责任链模式
 
-定义 *Avoid coupling the sender of a request to its receiver by giving more than one object a chance to handle the request. Chain the receiving objects and pass the request along the chain until an object handles it* 
+定义：*Avoid coupling the sender of a request to its receiver by giving more than one object a chance to handle the request. Chain the receiving objects and pass the request along the chain until an object handles it* 
 
 典型实现：
 
 * org.springframework.web.servlet.HandlerInterceptor
 
-**9. Spring 中的 Observer**
+### 2.x.x 观察者模式
 
-定义 *Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically* 
+定义：*Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically* 
 
 典型实现：
 
@@ -2679,9 +2585,9 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 * org.springframework.context.event.ApplicationEventMulticaster
 * org.springframework.context.ApplicationEvent
 
-**10. Spring 中的 Strategy**
+### 2.x.x 策略模式
 
-定义 *Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it* 
+定义 *Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it*，根据不同的策略表现出不同的行为；
 
 典型实现：
 
@@ -2689,7 +2595,7 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 * org.springframework.core.annotation.MergedAnnotations.SearchStrategy
 * org.springframework.boot.autoconfigure.condition.SearchStrategy
 
-**11. Spring 中的 Template Method**
+### 2.x.x 模板方法模式
 
 定义 *Define the skeleton of an algorithm in an operation, deferring some steps to subclasses. Template Method lets subclasses redefine certain steps of an algorithm without changing the algorithm's structure* 
 
@@ -2727,31 +2633,54 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 
 ## 3.x 事务的基本特性
 
+事务的四⼤特性ACID：
+
+<u>原⼦性Atomicity</u>
+
+- ⼀个事务必须被事务不可分割的最⼩⼯作单元，整个操作要么全部成功，要么全部失败；
+- ⼀般就是通过 commit和rollback来控制；
+
+<u>⼀致性Consistency</u>
+
+- 数据库总能从⼀个⼀致性的状态转换到另⼀个⼀致性的状态，⽐如商城下单⽀付成功后，开通视频播放权限，只要有任何一方发⽣异常就不会成功提交事务 ；
+
+<u>隔离性Isolation</u>
+
+- ⼀个事务相对于另⼀个事务是隔离的，⼀个事务所做的修改是在最终提交以前，对其他事务是不可⻅的；
+
+<u>持久性Durability</u>
+
+- ⼀旦事务提交，则其所做的修改就会永久保存到数据库中。此时即使系统崩溃，修改的数据也不会丢失；
+
 ## 3.x 事务的隔离级别
 
-<u>未提交读</u>
+事务的隔离级别越⾼，事务越安全，但是并发能⼒越差。
+
+<u>Read Uncommitted(未提交读，读取未提交内容)</u>
 
 * 读到其它事务未提交的数据（最新的版本）；
 * 错误现象：有脏读、不可重复读、幻读现象
 
-<u>提交读（RC）</u>
+<u>Read Committed(提交读，读取提交内容)</u>
 
 * 读到其它事务已提交的数据（最新已提交的版本）；
 * 错误现象：有不可重复读、幻读现象；
 * 使用场景：希望看到最新的有效值；
 
-<u>可重复读（RR）</u> 
+<u>Repeatable Read(可重复读,mysql默认的事务隔离级别)</u> 
 
 * 在事务范围内，**多次读**能够保证一致性（快照建立时最新已提交版本）；
 * 错误现象：有幻读现象，可以用加锁避免；
 * 使用场景：事务内要求更强的一致性，但看到的未必是最新的有效值；
 
-<u>串行读</u>
+<u>Serializable(可串⾏化)</u>
 
 * 在事务范围内，**仅有读读可以并发**，读写或写写会阻塞其它事务，用这种办法保证更强的一致性；
 * 错误现象：无；
 
 ## 3.x 脏读现象
+
+事务中的修改即使没有提交，其他事务也能看⻅，事务可以读到未提交的数据称为脏读；
 
 | **tx1**                                                    | **tx2**                                               |
 | ---------------------------------------------------------- | ----------------------------------------------------- |
@@ -2766,6 +2695,8 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 
 ## 3.x 不可重复度现象
 
+同个事务前后多次读取，不能读到相同的数据内容，中间另⼀个事务也操作了该同⼀数据；
+
 | **tx1**                                                  | **tx2**                                               |
 | -------------------------------------------------------- | ----------------------------------------------------- |
 | set  session transaction isolation level read committed; |                                                       |
@@ -2778,6 +2709,8 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 
 ## 3.x 幻读现象
 
+当某个事务在读取某个范围内的记录时，另外⼀个事务⼜在该范围内插⼊了新的记录，当之前的事务 再次读取该范围的记录时，发现两次不⼀样，产⽣幻读；
+
 | **tx1**                                                      | **tx2**                               |
 | ------------------------------------------------------------ | ------------------------------------- |
 | set  session transaction isolation level repeatable read;    |                                       |
@@ -2788,6 +2721,8 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 | insert  into account values(3, 5000);  /\* ERROR  1062 (23000): Duplicate entry '3' for key 'PRIMARY'  \*/ |                                       |
 
 - tx1 **查询**时并没有发现 3 号账户，执行**插入**时却发现主键冲突异常，就好像出现了幻觉一样；
+
+幻读和不可重复读的区别是：前者是⼀个范围，后者是本身，从总的结果来看，两者都表现为两次读取的结果不⼀致；
 
 **加锁避免幻读**
 
@@ -2889,7 +2824,10 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 
 * tx1 内的修改必须重新建立快照，否则，就会发生丢失更新的问题
 
+## 3.x Mysql常见的存储引擎，新版Mysql默认是哪个
 
+常⻅的有多类，InnoDB、MyISAM、MEMORY、MERGE、ARCHIVE、CSV等，⼀般⽐较常⽤的有InnoDB、MyISAM；
+MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 
 ## 3.x InnoDB vs MyISAM
 
@@ -2898,16 +2836,14 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 * 索引分为聚簇索引与二级索引：
   * 聚簇索引：主键值作为索引数据，叶子节点还包含了所有字段数据，索引和数据是存储在一起的；
   * 二级索引：除主键外的其它字段建立的索引称为二级索引。被索引的字段值作为索引数据，叶子节点还包含了主键值；
-
 * **支持事务**：
   * 通过 undo log 支持事务回滚、当前读（多版本查询）；
   * 通过 redo log 实现持久性；
   * 通过两阶段提交实现一致性；
   * 通过当前读、锁实现隔离性；
-
 * 支持行锁、间隙锁；
-
-* 支持外键；
+* 支持物理外键；
+* 不支持全文索引，但是可以通过插件实现例如ElasticSearch；
 
 <u>MyISAM</u>
 
@@ -2915,14 +2851,14 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
   * 被索引字段值作为索引数据，叶子节点还包含了该记录数据页地址，数据和索引是分开存储的；
 * **不支持事务**，没有 undo log 和 redo log；
 * 仅支持表锁；
-* 不支持外键；
-* 会保存表的总行数；
+* 不支持物理外键；
+* 会保存表的总行数，支持全文索引；
 
 ## 3.x Innodb是如何实现事务的
 
 ## 3.x Explain语句结果中各个字段分别表示什么
 
-## 3.x 常见的索引实现
+## 3.x 常见的索引数据结构及其实现
 
 <u>哈希索引</u>
 
@@ -2950,6 +2886,21 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 > ***树高计算公式***
 >
 > * $log_{10}(N) /  log_{10}(M)$ 其中 N 为数据行数，M 为分叉数
+
+
+
+## 3.x MySQL的功能索引
+
+| 索引名称    | 特点                                                         | 创建语句                                                     |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 普通索引    | 最基本的索引,仅加速查询                                      | `CREATE INDEX idx_name ON table_name(filed_name)`          |
+| 唯一索引    | 加速查询，列值唯⼀，允许为空； 组合索引则列值的组合必须唯⼀  | `CREATE UNIQUE INDEX idx_name ON table_name(filed_name_1,filed_name_2)` |
+| 主键索引 | 加速查询，列值唯⼀， 唯一且不允许有空值     | `ALTER TABLE table_name ADD PRIMARY KEY ( filed_name )`      |
+| 组合索引 | 加速查询，多条件组合查询                                     | `CREATE INDEX idx_name ON table_name(filed_name_1,filed_name_2);` |
+| 覆盖索引 | 索引包含所需要的值，不需要“回表”查 询， ⽐如查询两个字段，刚好是组合索引的两个字段 |                                                              |
+| 全文索引 | 对内进行分词搜索，仅可⽤于 Myisam， Innodb更多使用ElasticSearch做搜索 | `ALTER TABLE table_name ADD FULLTEXT ( filed_name )`         |
+
+
 
 ## 3.x InnoDB 索引特点
 
@@ -2990,6 +2941,29 @@ composite 对象的作用是，将分散的调用集中起来，统一调用入�
 ![image-20210901170954328](interview_notes.assets/image-20210901170954328.png)
 
 ## 3.x 为什么Mysql使用B+树
+
+## 3.x 索引的优缺点
+
+<u>索引优点</u>
+
+- 快速定位到表的位置，减少服务器扫描的数据；
+- 有些索引存储了实际的值（覆盖索引），特定情况下只要使⽤索引就能完成查询；
+
+<u>索引缺点</u>
+
+- 索引会浪费磁盘空间，不要创建非必要的索引；
+- 插⼊、更新、删除需要维护索引，带来额外的开销；
+- 索引过多，修改表的时候重构索引性能差；
+
+<u>索引优化实践</u> 
+
+- 尽量使用**前缀索引**，特别是TEXT和BLOG类型的字段，只检索前⾯⼏个字符，提⾼检索速度
+- 尽量使用**数据量少**的索引，索引值过⻓查询速度会受到影响
+- 选择**合适的索引列顺序**，唯一性高的尽量靠前;
+- 内容变动少，且查询频繁，可以建⽴多⼏个索引
+- 内容变动频繁，谨慎创建索引
+- 根据业务创建适合的索引类型，比如某个字段常⽤来做查询条件，则为这个字段建⽴索引提⾼查询速度
+- 组合索引选择业务查询**最相关**的字段
 
 ## 3.x 索引命中需要注意什么
 
@@ -3150,16 +3124,72 @@ explain select id from big_person where first_name not in ('Mark', 'Kevin','Davi
 ![image-20210902082718756](interview_notes.assets/image-20210902082718756.png)
 
 - 连接器：负责建立连接、检查权限、连接超时时间由 wait_timeout 控制，默认 8 小时；
-
 - 查询缓存：会将 SQL 和查询结果以键值对方式进行缓存，修改操作会以表单位导致缓存失效；
-
 - 分析器：词法、语法分析；
-
 - 优化器：决定用哪个索引，决定表的连接顺序等；
-
 - 执行器：根据存储引擎类型，调用存储引擎接口；
-
 - 存储引擎：数据的读写接口，索引、表都在此层实现；
+
+## 3.x 数据库查询指令的执行顺序
+
+- from 从哪个表查询；
+- where 初步过滤条件
+- group by 过滤后进⾏分组[重点]
+- having 对分组后的数据进行二次过滤[重点]
+- select 查看哪些结果字段
+- order by 按照怎样的顺序进行排序返回[重点]
+
+## 3.x MySQL中的varchar和char有什么区别
+
+<u>char(16)</u>
+
+- 长度固定，存储字符，当插⼊的长度小于定义长度时，使用空格填充；
+- 存取速度比varchar快得多；
+- 适合存储很短的,固定⻓度的字符串，例如手机号，MD5值等；
+
+<u>varchar(16)</u>
+
+- 长度可变，存储字符，当插入长度小于定义长度时，按实际插入的长度进行存储；
+- 存取速度比char慢得多；
+- 适合存储长度不固定场景，如收获地址、邮箱地址等
+
+## 3.x MySQL中的datetime和timestamp有什么区别
+
+<u>datetime</u>
+
+- 8字节，可存储时间范围：1000-01-01 00:00:00到 9999-12-31 23:59:59；
+- 存储与时区无关，不会发⽣改变；
+
+<u>timestamp</u>
+
+-  4字节，可存储时间范围：1970-01-01 00:00:01 到 2038-01-19 11:14:07；
+- 存储的是与时区有关，会随数据库的时区而发⽣改变；
+
+<u>为什么timestamp只能到2038年？</u> 
+
+- MySQL的timestamp类型是4个字节，最⼤值是2的31次⽅减1，结果是2147483647， 转换成北京时间就是2038-01-19 11:14:07
+
+## 3.x 千万级MySQL数据表分页查询优化
+
+## 3.x Mysql有多少种常见的日志
+
+- redo 重做日志
+  - 用来确保事务的持久性，防止在发⽣故障时**脏页数据**（缓存和磁盘不一致的数据）未写⼊磁盘。
+  - 重启数据库会进行redo log执⾏重做，以到达事务⼀致性  
+- undo 回滚日志
+  - 用来保证数据的原⼦性，记录事务发⽣之前的数据的⼀个版本用于回滚；
+  - Innodb事务的可重复读和读取已提交隔离级别就是通过mvcc+undo实现；
+- errorlog 错误日志
+  - 用来记录Mysql本身启动、停止、运行期间发⽣的错误信息；
+- slow query log 慢查询日志
+  - 用来记录执行时间过⻓的SQL，用于后续的优化；
+  - 时间阈值可以配置，可以配置只记录执行成功的SQL；
+- binlog 二进制日志
+  - 记录数据读写操作的变更，用于主从复制、主从同步；
+- relay log 中继日志
+  - 用于数据库主从同步，将主库发送来的binlog先保存在本地，然后从库进⾏回放；
+- general log 普通日志
+  - 用于记录数据库操作明细，默认关闭，开启会降低数据库性能；
 
 ## 3.x undo log 与 redo log
 
