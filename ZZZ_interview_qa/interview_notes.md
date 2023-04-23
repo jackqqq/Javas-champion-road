@@ -1351,7 +1351,25 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 
 # 二、框架
 
-## 2.x 什么是Spring框架的DI和IOC
+## 2.x Spirng
+
+### 2.x.x Spring的组成
+
+Spring是一个轻量级的IoC和AOP容器框架，是为Java应用程序提供基础性服务的一套框架，目的是用于简化企业应用程序的开发，它使得开发者只需要关心业务需求。常见的配置方式有三种：基于XML的配置、基于注解的配置、基于Java编程的配置；
+
+Spring主要由以下几个模块组成：
+
+* Spring Core：核心类库，提供IOC服务；
+* Spring Context：提供框架式的Bean访问方式，以及企业级功能（JNDI、定时任务等）；
+* Spring AOP：AOP服务；
+* Spring DAO：对JDBC的抽象，简化了数据访问异常的处理；
+* Spring ORM：对现有的ORM框架的支持；
+* Spring Web：提供了基本的面向Web的综合特性，例如多方文件上传；
+* Spring MVC：提供面向Web应用的Model-View-Controller实现；
+
+![image-20230423214344202](interview_notes.assets/image-20230423214344202.png)
+
+### 2.x.x 什么是Spring框架的DI和IOC
 
 <u>IOC 控制反转</u>
 
@@ -1370,7 +1388,7 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 
 依赖注⼊(DI)和控制反转(IOC)是从不同的角度的描述的同⼀件事情，通过引⼊IOC容器，利用依赖关系注⼊的⽅式，实现对象之间的**解耦**
 
-## 2.x Spring中bean的scope作用域有哪些
+### 2.x.x Spring中bean的scope作用域有哪些
 
 <u>singleton</u>
 
@@ -1389,7 +1407,7 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 - session：与request范围类似，确保每个session中有一个bean的实例，在session过期后， bean会随之失效；
 - global session（基本不用）；
 
-## 2.x Spring基于xml注入bean的几种方式
+### 2.x.x Spring基于xml注入bean的几种方式
 
 - Set方法注入；
 - 构造器注入：
@@ -1398,9 +1416,9 @@ finalize 是 Object 中的一个方法，如果子类重写它，垃圾回收时
 - *静态工厂注入；*
 - *实例工厂；*
 
-## 2.x Spring refresh
+### 2.x.x Spring refresh
 
-### 2.x.x Spring refresh 概述
+<u>Spring refresh 概述</u>
 
 refresh 是 AbstractApplicationContext 中的一个方法，**负责初始化 ApplicationContext 容器**，容器必须调用 refresh 才能正常工作;
 
@@ -1442,7 +1460,7 @@ refresh 是 AbstractApplicationContext 中的一个方法，**负责初始化 Ap
 
 
 
-### 2.x.x prepareRefresh
+<u>prepareRefresh</u>
 
 这一步创建和准备了 **Environment 对象**，赋值给了ApplicationContext 的一个成员变量
 
@@ -1454,7 +1472,7 @@ refresh 是 AbstractApplicationContext 中的一个方法，**负责初始化 Ap
 
 ![image-20210902181639048](interview_notes.assets/image-20210902181639048.png)
 
-### 2.x.x obtainFreshBeanFactory
+<u>obtainFreshBeanFactory</u>
 
 这一步获取（或创建） **BeanFactory对象**，同样地也赋值给 ApplicationContext 的一个成员变量
 
@@ -1466,7 +1484,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902182004819](interview_notes.assets/image-20210902182004819.png)
 
-### 2.x.x prepareBeanFactory
+<u>prepareBeanFactory</u>
 
 这一步会进一步完善 BeanFactory，为它的各项成员变量赋值:
 
@@ -1481,7 +1499,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902182541925](interview_notes.assets/image-20210902182541925.png)
 
-### 2.x.x postProcessBeanFactory
+<u>postProcessBeanFactory</u>
 
 这一步是空实现，留给**子类**扩展：
 
@@ -1489,7 +1507,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 * 这里体现的是模板方法设计模式；
 
-### 2.x.x invokeBeanFactoryPostProcessors
+<u>invokeBeanFactoryPostProcessors</u>
 
 这一步会调用 **beanFactory 后处理器**，充当 beanFactory 的扩展点，可以用来补充或修改 BeanDefinition
 
@@ -1500,7 +1518,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902183232114](interview_notes.assets/image-20210902183232114.png)
 
-### 2.x.x registerBeanPostProcessors
+<u>registerBeanPostProcessors</u>
 
 这一步是继续从 beanFactory 中找出 **bean 后处理器**，添加至 beanPostProcessors 集合中；
 
@@ -1511,7 +1529,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902183520307](interview_notes.assets/image-20210902183520307.png)
 
-### 2.x.x initMessageSource
+<u>initMessageSource</u>
 
 这一步是为 ApplicationContext 添加 **messageSource 成员**，实现国际化功能；
 
@@ -1520,7 +1538,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902183819984](interview_notes.assets/image-20210902183819984.png)
 
-### 2.x.x initApplicationContextEventMulticaster
+<u>initApplicationContextEventMulticaster</u>
 
 这一步为 ApplicationContext 添加事件广播器**applicationContextEventMulticaster成员**，它的作用是发布事件给监听器；
 
@@ -1529,7 +1547,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902183943469](interview_notes.assets/image-20210902183943469.png)
 
-### 2.x.x onRefresh
+<u>onRefresh</u>
 
 这一步是空实现，留给**子类**扩展；
 
@@ -1537,7 +1555,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 * 体现的是模板方法设计模式；
 
-### 2.x.x registerListeners
+<u>registerListeners</u>
 
 这一步会从多种途径找到事件监听器，并添加至 applicationEventMulticaster；
 
@@ -1549,7 +1567,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902184343872](interview_notes.assets/image-20210902184343872.png)
 
-### 2.x.x finishBeanFactoryInitialization
+<u>finishBeanFactoryInitialization</u>
 
 这一步会将 剩余beanFactory 的成员补充完毕，并初始化所有非延迟单例 bean；
 
@@ -1560,7 +1578,7 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 ![image-20210902184641623](interview_notes.assets/image-20210902184641623.png)
 
-### 2.x.x finishRefresh
+<u>finishRefresh</u>
 
 这一步会为 ApplicationContext 添加 **lifecycleProcessor 成员**，用来控制容器内需要生命周期管理的 bean；
 
@@ -1574,9 +1592,9 @@ BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>�
 
 
 
-## 2.x Spring bean 生命周期
+### 2.x.x Spring bean 生命周期
 
-### 2.x.x bean 生命周期概述
+<u>bean 生命周期概述</u>
 
 源码入口：
 
@@ -1608,7 +1626,7 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
 >
 > * 划分的阶段和名称并不重要，重要的是理解整个过程中做了哪些事情
 
-### 2.x.x 处理名称，检查缓存
+<u>处理名称，检查缓存</u>
 
 这一步会处理别名，将别名解析为实际名称；
 
@@ -1620,19 +1638,19 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
     * 无循环依赖，产品是原始对象
   * singletonObjects：一级缓存，存放单例成品对象
 
-### 2.x.x 处理父子容器
+<u>处理父子容器</u>
 
 如果当前容器根据名字找不到这个 bean，此时若父容器存在，则执行父容器的 getBean 流程；
 
 * 父子容器的 bean 名称可以重复（优先子容器的bean）；
 
-### 2.x.x 处理 dependsOn
+<u>处理 dependsOn</u>
 
 如果当前 bean 有通过 dependsOn 指定了**非显式依赖的 bean**，这一步会提前创建这些 dependsOn 的 bean ；
 
 * 所谓非显式依赖，就是指两个 bean 之间不存在直接依赖关系，但需要控制它们的创建先后<u>顺序</u>
 
-### 2.x.x 选择 Scope 策略
+<u>选择 Scope 策略</u>
 
 可以理解为从XXX范围内找到这个bean；
 
@@ -1646,7 +1664,7 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
   * 销毁流程：从首次getBean被创建，到request结束前被销毁；
   * 创建流程：首先到 **request 域**获取 bean，如果有则直接返回，没有再进入创建流程；
 
-### 2.x.x 创建bean
+<u>创建bean</u>
 
 ![image-20230410221500572](interview_notes.assets/image-20230410221500572.png)
 
@@ -1699,11 +1717,11 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
 
 存储时都会封装为 **DisposableBeanAdapter 类型**对销毁方法的调用进行适配（适配器模式）；
 
-### 2.x.x 类型转换处理
+<u>类型转换处理</u>
 
 当 getBean 的 requiredType 参数与实际得到的对象类型不同时，会尝试进行类型转换；
 
-### 2.x.x 销毁 bean
+<u>销毁 bean</u>
 
 * 销毁时机：
   * singleton bean 的销毁在 **ApplicationContext.close** 时，此时会找到所有 DisposableBean 的名字，逐一销毁；
@@ -1714,59 +1732,20 @@ bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean �
   * 其次` DisposableBean` 接口销毁；
   * 最后` destroyMethod` 销毁（包括自定义名称，推断名称，AutoCloseable 接口 多选一）；
 
-## 2.x Spring 中 ApplicationContext 和 BeanFactory 的区别
+### 2.x.x Spring 中 ApplicationContext 和 BeanFactory 的区别
 
-<u>包目录不同</u>
+`BeanFactory`是Spring中非常核⼼的组件，表示Bean⼯⼚，可以生成、维护Bean；
 
-- spring-beans.jar 中 org.springframework.beans.factory.BeanFactory 
-- spring-context.jar 中 org.springframework.context.ApplicationContext 
+`ApplicationContext`继承了`BeanFactory`，所以`ApplicationContext`拥有`BeanFactory`所有的特点，也是⼀个Bean⼯⼚，但是`ApplicationContext`除开继承了`BeanFactory`之外，还继承了诸如` EnvironmentCapable`、`MessageSource`、`ApplicationEventPublisher`等接⼝，从⽽` ApplicationContext`还有获取系统环境变量、国际化、事件发布等功能，这是BeanFactory所不具备的；
 
-<u>国际化</u>
+### 2.x.x Bean 是线程安全的么
 
-- BeanFactory 是不支持国际化功能的，因为 BeanFactory 没有扩展 Spring 中 MessageResource 接口；
-- 相反，由于 ApplicationContext 扩展了 MessageResource 接口，因而具有消息处理的能力 （i18N）；
+Spring本身并没有针对Bean做线程安全的处理，所以：
 
-<u>强大的事件机制（Event）</u> 
+- 如果Bean是⽆状态的，那么Bean则是线程安全的；
+-  如果Bean是有状态的，那么Bean则不是线程安全的；
 
-- 基本上牵涉到事件（Event）方面的设计，就离不开观察者模式；
-- ApplicationContext 的事件机制 主要通过 ApplicationEvent 和 ApplicationListener 这两个接口来提供的，和 Java swing 中的事件机制一样。即当 ApplicationContext 中发布一个事件时，所有扩展了 ApplicationListener 的 Bean 都将接受到这个事件，并进行相应的处理。 
-
-<u>底层资源的访问</u>
-
-- ApplicationContext 扩展了 ResourceLoader（资源加载器）接口，从而可以用来加载多个 Resource；
-- BeanFactory 是没有扩展 ResourceLoader；
-
-<u>对 Web 应用的支持</u> 
-
-- BeanFactory 通常以编程的方式被创建；
-- ApplicationContext 能以声明的方式创建，如使用 ContextLoader，也可以使用 ApplicationContext 的实现方式之一，以编程的方式创建 ApplicationContext 实例。 
-
-<u>延迟加载</u> 
-
-- BeanFactroy 采用的是延迟加载形式来注入 Bean 的，即只有在使用到某个 Bean 时(调用 getBean())，才对该 Bean 进行加载实例化。这样，我们就不能发现一些存在的 spring 的配置 问题。而 ApplicationContext 则相反，它是在容器启动时，一次性创建了所有的 Bean。这 样，在容器启动时，我们就可以发现 Spring 中存在的配置错误；
-- BeanFactory 和 ApplicationContext 都支持 BeanPostProcessor、 BeanFactoryPostProcessor 的使用。两者之间的区别是：BeanFactory 需要手动注册，而 ApplicationContext 则是自动注册；
-- 可以看到，ApplicationContext 继承了 BeanFactory，BeanFactory 是 Spring 中比较原始的 Factory，它不支持 AOP、Web 等 Spring 插件。而 ApplicationContext 不仅包含了 BeanFactory 的所有功能，还支持 Spring 的各种插件，还以一种面向框架的方式工作以及对上下文进行分层和实 现继承；
-- BeanFactory 是 Spring 框架的基础设施，面向 Spring 本身；而 ApplicationContext 面向使用 Spring 的开发者，相比 BeanFactory 提供了更多面向实际应用的功能，几乎所有场合都可以直接使 用 ApplicationContext，而不是底层的 BeanFactory；
-
-<u>常用容器</u> 
-
-- BeanFactory 类型的有 XmlBeanFactory，它可以根据 XML 文件中定义的内容，创建相应的 Bean。
--  ApplicationContext 类型的常用容器有：
-  - ClassPathXmlApplicationContext：从 ClassPath 的 XML 配置文件中读取上下文，并生成上 下文定义。应用程序上下文从程序环境变量中取得;
-  - FileSystemXmlApplicationContext：由文件系统中的 XML 配置文件读取上下文;
-  - XmlWebApplicationContext：由 Web 应用的 XML 文件读取上下文,例如我们在 Spring MVC 使用的情况;
-
-## 2.x Spring 框架中的单例 Bean 是线程安全的么
-
-Spring 框架并没有对单例 Bean 进行任何多线程的封装处理，所以关于单例 Bean 的线程安全和并发问题，需要开发者自行去搞定，并不是 Spring 应该去关心的；
-
-Spring 应该做的是，提供根据配置，创 建单例 Bean 或多例 Bean 的功能。 
-
-当然，但实际上，大部分的 Spring Bean 并没有可变的状态，所以在某种程度上说 Spring 的单例 Bean 是线程安全的。如果你的 Bean 有多种状态的话，就需要自行保证线程安全。最浅显的解决办 法，就是将多态 Bean 的作用域（Scope）由 Singleton 变更为 Prototype
-
-
-
-## 2.x AOP
+另外，Bean是不是线程安全，跟Bean的作⽤域没有关系，Bean的作⽤域只是表示Bean的⽣命周期范围，对于任何⽣命周期的Bean都是⼀个对象，这个对象是不是线程安全的，还是得看这个Bean对象本身。
 
 ### 2.x.x  什么是AOP
 
@@ -1816,10 +1795,6 @@ Spring切面可以应用五种类型的通知：
 -  <u>around</u>: 在方法执行之前和之后调用的通知；
 
 ### 2.x.x 什么是静态代理
-
-
-
-## 2.x Spring 事务
 
 ### 2.x.x Spring 事务失效的场景
 
@@ -2175,11 +2150,11 @@ public class Service7 {
   * synchronized 范围应扩大至代理方法调用
   * 使用 select … for update 替换 select
 
-### 2.x.x 事务的隔离级别
+### 2.x.x Spirng事务的隔离级别
 
 同MySQL；
 
-### 2.x.x Spring 事务的传播级别
+### 2.x.x Spring 事务的传播行为
 
 Spring事务定义了7种传播机制：
 
@@ -2222,9 +2197,246 @@ Spring事务定义了7种传播机制：
 
 `@Transactional`注解既可以标注在类上，也可以标注在方法上。当在类上时，默认应用到类里的所 有方法。如果此时方法上也标注了，则方法上的优先级高。 另外注意方法一定要是public的；
 
-## 2.x Spring MVC 执行流程
+### 2.x.x @Autowired和@Resource注解的区别
 
-### 2.x.x 初始化阶段
+`@Resource`和`@Autowired`都是做bean的注入时使用，其实`@Resource`并不是Spring的注解，它的包是`javax.annotation.Resource`，需要导入，但是Spring支持该注解的注入；
+
+<u>**共同点：**</u>
+
+- 两者都可以写在字段和setter方法上；
+- 如果都写在字段上，那么就不需要再写setter方法；
+
+**<u>不同点：</u>**
+
+- `@Autowired`
+
+  - Spring提供的注解，需要导入`org.springframework.beans.factory.annotation.Autowired;`’；
+  - `@Autowired`注解是按照类型（byType）装配依赖对象，默认情况下它要求依赖对象必须存在，如果允许null值，可以设置它的required属性为false：
+
+  ```java
+  public class TestServiceImpl {
+      // 下面两种@Autowired只要使用一种即可
+      @Autowired
+      private UserDao userDao; // 用于字段上
+  
+      @Autowired
+      public void setUserDao(UserDao userDao) { // 用于属性的方法上
+          this.userDao = userDao;
+      }
+  }
+  ```
+
+  - 如果我们想使用按照名称（byName）来装配，可以结合`@Qualififier`注解一起使用：
+
+  ```java
+  public class TestServiceImpl {
+   @Autowired
+   @Qualifier("userDao")
+   private UserDao userDao; }
+  ```
+
+- `@Resource`
+
+  - `@Resource`默认按照ByName自动注入，由J2EE提供，需要导入包`javax.annotation.Resource`；
+  - `@Resource`有两个重要的属性：**name**和**type**，Spring将`@Resource`注解的name属性解析为bean的名字，而type属性则解析为bean的类型；
+    - 如果使用name属性，则使用byName的自动注入策略，而使用type属性时则使用byType自动注入策略；
+    - 如果既不制定name也不制定type属性，这时将通过反射机制使用byName自动注入策略；
+
+  ```java
+  public class TestServiceImpl {
+      // 下面两种@Resource只要使用一种即可
+      @Resource(name="userDao")
+      private UserDao userDao; // 用于字段上
+  
+      @Resource(name="userDao")
+      public void setUserDao(UserDao userDao) { // 用于属性的setter方法上
+          this.userDao = userDao;
+      }
+  }
+  ```
+
+  - @Resource装配顺序：
+    - 如果**同时指定了name和type**，则从Spring上下文中找到**唯一匹配**的bean进行装配，找不到则抛出异常；
+    - 如果**指定了name**，则从上下文中查找**名称（id）匹配**的bean进行装配，找不到则抛出异常；
+    - 如果**指定了type**，则从上下文中找到**类型匹配的唯一bean**进行装配，<u>找不到或是找到多个，都会抛出异常</u>；
+    - 如果既没有指定name，又没有指定type，则自动按照byName方式进行装配；如果没有匹配，则回退为一个原始类型进行匹配，如果匹配则自动装配；
+
+- `@Resource`的作用相当于`@Autowired`，只不过`@Autowired`按照byType自动注入；
+
+### 2.x.x @Configuration注解的理解
+
+使用`@Configuration`标注的类是配置类，配置类相当于一个工厂，标注`@Bean`注解的方法相当于工厂方法；
+
+- `@Bean`不支持方法重载，如果有多个重载方法，仅有一个能入选为工厂方法；
+- `@Configuration`默认会为标注的类生成代理，其目的是保证@Bean方法相互调用时，仍然能够保证其单例特性；（如果设置了@Configuration注解的proxyBeanMethod为false则不会生成代理）
+
+### 2.x.x @Import注解的理解
+
+`@Import`注解和`@CompentScan`注解的作用类似，`@CompentScan`注解用来进行包扫描，将包中扫描到的特殊注解的类（Bean）加入到Spring容器进行管理；
+
+`@Import`注解则是通过指定一个类型来找到类，将类交给Spring容器进行管理；
+
+//   @Import(Bean1.class) // 1. 引入单个 bean
+
+//   @Import(OtherConfig.class) // 2. 引入一个配置类
+
+  @Import(MySelector.class) // 3. 通过 Selector 引入多个类
+
+//   @Import(MyRegistrar.class) // 4. 通过 beanDefinition 注册器
+
+  // 1. 同一配置类中, @Import 先解析  @Bean 后解析
+
+  // 2. 同名定义, 默认后面解析的会覆盖前面解析的
+
+  // 3. 不允许覆盖的情况下, 如何能够让 MyConfig(主配置类) 的配置优先? (虽然覆盖方式能解决)
+
+  // 4. DeferredImportSelector 最后工作, 可以简单认为先解析 @Bean, 再 Import
+
+### 2.x.x Spring 中的设计模式
+
+<u>**单例模式**</u>
+
+>  *Ensure a class only has one instance, and provide a global point of access to it* 
+
+区分 singleton pattern 与 Spring 中的 singleton bean
+
+* 显然 Spring 中的 singleton bean 并非实现了单例模式，singleton bean 只能保证每个容器内，相同 id 的 bean 单实例
+* 当然 Spring 中也用到了单例模式，例如
+  * org.springframework.transaction.TransactionDefinition#withDefaults
+  * org.springframework.aop.TruePointcut#INSTANCE
+  * org.springframework.aop.interceptor.ExposeInvocationInterceptor#ADVISOR
+  * org.springframework.core.annotation.AnnotationAwareOrderComparator#INSTANCE
+  * org.springframework.core.OrderComparator#INSTANCE
+
+<u>**构建器模式**</u>
+
+> *Separate the construction of a complex object from its representation so that the same construction process can create different representations* 
+
+它的主要亮点有三处：
+
+1. 较为灵活的构建产品对象
+
+2. 在不执行最后 build 方法前，产品对象都不可用
+
+3. 构建过程采用链式调用，看起来比较爽
+
+Spring 中体现 Builder 模式的地方：
+
+* org.springframework.beans.factory.support.BeanDefinitionBuilder
+
+* org.springframework.web.util.UriComponentsBuilder
+
+* org.springframework.http.ResponseEntity.HeadersBuilder
+
+* org.springframework.http.ResponseEntity.BodyBuilder
+
+**<u>工厂方法模式</u>**
+
+> *Define an interface for creating an object, but let subclasses decide which class to instantiate. Factory Method lets a class defer instantiation to subclasses*
+
+主要是用来实现接口和实现相分离，降低耦合；根据上面的定义，Spring 中的 ApplicationContext 与 BeanFactory 中的 getBean 都可以视为工厂方法，它隐藏了 bean （产品）的创建过程和具体实现
+
+Spring 中其它工厂：
+
+* org.springframework.beans.factory.FactoryBean
+
+* @Bean 标注的静态方法及实例方法
+
+* ObjectFactory 及 ObjectProvider
+
+前两种工厂主要封装第三方的 bean 的创建过程，后两种工厂可以推迟 bean 创建，解决循环依赖及单例注入多例等问题
+
+**<u>适配器模式</u>**
+
+> *Convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces* 
+
+一套接口适配成调用者所期望的接口，典型的实现有两处：
+
+* org.springframework.web.servlet.HandlerAdapter – 因为控制器实现有各种各样，比如有
+  * 大家熟悉的 @RequestMapping 标注的控制器实现
+  * 传统的基于 Controller 接口（不是 @Controller注解啊）的实现
+  * 较新的基于 RouterFunction 接口的实现
+  * 它们的处理方法都不一样，为了统一调用，必须适配为 HandlerAdapter 接口
+* org.springframework.beans.factory.support.DisposableBeanAdapter – 因为销毁方法多种多样，因此都要适配为 DisposableBean 来统一调用销毁方法 
+
+**<u>组合模式</u>**
+
+> *Compose objects into tree structures to represent part-whole hierarchies. Composite lets clients treat individual objects and compositions of objects uniformly* 
+
+典型实现有：
+
+* org.springframework.web.method.support.HandlerMethodArgumentResolverComposite
+* org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite
+* org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
+* org.springframework.web.servlet.view.ViewResolverComposite
+
+composite 对象的作用是，将**分散的调用集中起来，统一调用入口**，它的特征是，与具体干活的实现实现同一个接口，当调用 composite 对象的接口方法时，其实是委托具体干活的实现来完成
+
+<u>**装饰器模式**</u>
+
+> *Attach additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality* 
+
+对一个对象动态地进行增强；
+
+主要用于由子类扩展方式来实现功能增强的问题，避免继承很多用不到的方法；
+
+典型实现：
+
+* org.springframework.web.util.ContentCachingRequestWrapper
+
+<u>**代理模式**</u>
+
+> *Provide a surrogate or placeholder for another object to control access to it* 
+
+**装饰器模式注重的是功能增强**，避免子类继承方式进行功能扩展，**而代理模式更注重控制目标的访问**；
+
+典型实现：
+
+* org.springframework.aop.framework.JdkDynamicAopProxy
+* org.springframework.aop.framework.ObjenesisCglibAopProxy
+
+<u>**责任链模式**</u>
+
+> *Avoid coupling the sender of a request to its receiver by giving more than one object a chance to handle the request. Chain the receiving objects and pass the request along the chain until an object handles it* 
+
+典型实现：
+
+* org.springframework.web.servlet.HandlerInterceptor
+
+**<u>观察者模式</u>**
+
+> *Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically* 
+
+典型实现：
+
+* org.springframework.context.ApplicationListener
+* org.springframework.context.event.ApplicationEventMulticaster
+* org.springframework.context.ApplicationEvent
+
+**<u>策略模式</u>**
+
+> *Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it*
+
+根据不同的策略表现出不同的行为，典型实现：
+
+* org.springframework.beans.factory.support.InstantiationStrategy
+* org.springframework.core.annotation.MergedAnnotations.SearchStrategy
+* org.springframework.boot.autoconfigure.condition.SearchStrategy
+
+**<u>模板方法模式</u>**
+
+> *Define the skeleton of an algorithm in an operation, deferring some steps to subclasses. Template Method lets subclasses redefine certain steps of an algorithm without changing the algorithm's structure* 
+
+典型实现：
+
+* 大部分以 Template 命名的类，如 JdbcTemplate，TransactionTemplate
+* 很多以 Abstract 命名的类，如 AbstractApplicationContext
+
+## 2.x Spring MVC
+
+### 2.x.x Spring MVC执行流程
+
+**<u>初始化阶段</u>**
 
 - 在 Web 容器第一次用到 **DispatcherServlet** 的时候，会创建其对象并执行 **init** 方法：
   - 如果是Spring + SpringMVC，由Tomcat来初始化**DispatcherServlet** ；
@@ -2243,7 +2455,7 @@ Spring事务定义了7种传播机制：
 
 <img src="interview_notes.assets/image-20210903140657163.png" alt="image-20210903140657163" style="zoom: 80%;" />
 
-### 2.x.x 匹配阶段
+**<u>匹配阶段</u>**
 
 在这个阶段，用户发送的请求统一到达前端控制器 **DispatcherServlet**，但**DispatcherServlet**主要职责是作为一个请求的入口，处理请求需要交给处理器来完成，并不负责处理具体的请求；
 
@@ -2262,7 +2474,7 @@ Spring事务定义了7种传播机制：
 
 <img src="interview_notes.assets/image-20210903141204799.png" alt="image-20210903141204799" style="zoom:80%;" />
 
-### 2.x.x 调用阶段
+**<u>调用阶段</u>**
 
 - 依次调用拦截器 **preHandle**
 
@@ -2289,154 +2501,15 @@ Spring事务定义了7种传播机制：
 
 - 如果控制器方法标注了`@ResponseBody `注解，则在第 2 步，就会生成 json 结果，并标记 ModelAndView 已处理，这样就不会执行第 3 步的视图渲染
 
-## 2.x Spring 注解
+### 2.x.x SpringMVC常用的注解有哪些
 
-### 2.x.x 事务注解
+- `@RequestMapping`：用于处理请求 url 映射的注解，可用于类或方法上。用于类上，则表示类中 的所有响应请求的方法都是以该地址作为父路径;
+- `@RequestBody`：注解实现接收http请求的json数据，将json转换为java对象；
+- `@ResponseBody`：注解实现将conreoller方法返回对象转化为json对象响应给客户；
 
-* `@EnableTransactionManagement`，会额外加载 4 个 bean
-  * BeanFactoryTransactionAttributeSourceAdvisor 事务切面类
-  * TransactionAttributeSource 用来解析事务属性
-  * TransactionInterceptor 事务拦截器
-  * TransactionalEventListenerFactory 事务监听器工厂
-* `@Transactional`
+## 2.x SpringBoot
 
-### 2.x.x 核心
-
-* `@Order`：控制Bean的执行顺序；
-
-### 2.x.x 切面
-
-* `@EnableAspectJAutoProxy`
-  * 会加载 AnnotationAwareAspectJAutoProxyCreator，它是一个 bean 后处理器，用来创建代理；
-  * 如果没有配置 @EnableAspectJAutoProxy，又需要用到代理（如事务）则会使用 InfrastructureAdvisorAutoProxyCreator 这个 bean 后处理器；
-
-### 2.x.x 组件扫描与配置类
-
-* `@Component`
-
-  * `@Controller`
-
-  * `@Service`
-
-  * `@Repository`
-
-* `@ComponentScan`
-
-* `@Conditional `：做条件装配；
-
-* `@Configuration`
-
-  * 配置类其实相当于一个工厂, 标注 @Bean 注解的方法相当于工厂方法
-  * @Bean 不支持方法重载, 如果有多个重载方法, 仅有一个能入选为工厂方法
-  * @Configuration 默认会为标注的类生成代理, 其目的是保证 @Bean 方法相互调用时, 仍然能保证其单例特性
-  * @Configuration 中如果含有 BeanFactory 后处理器, 则实例工厂方法会导致 MyConfig 提前创建, 造成其依赖注入失败，解决方法是改用静态工厂方法或直接为 @Bean 的方法参数依赖注入, 针对 Mapper 扫描可以改用注解方式
-
-* `@Bean`
-
-* `@Import `
-
-  * 四种用法
-
-    ① 引入单个 bean
-
-    ② 引入一个配置类
-
-    ③ 通过 Selector 引入多个类
-
-    ④ 通过 beanDefinition 注册器
-
-  * 解析规则
-
-    * 同一配置类中, @Import 先解析  @Bean 后解析
-    * 同名定义, 默认后面解析的会覆盖前面解析的
-    * 不允许覆盖的情况下, 如何能够让 MyConfig(主配置类) 的配置优先? (虽然覆盖方式能解决)
-    * 采用 DeferredImportSelector，因为它最后工作, 可以简单认为先解析 @Bean, 再 Import
-
-* `@Lazy`
-
-  * 加在类上，表示此类延迟实例化、初始化；
-  * 加在方法参数上，此参数会以代理方式注入，解决循环依赖；
-
-* `@PropertySource`：读取properties文件存储见值信息；
-
-### 2.x.x 依赖注入
-
-* `@Autowired`
-* `@Qualifier`
-* `@Value`
-
-### 2.x.x mvc mapping
-
-* `@RequestMapping`，可以派生多个注解如 @GetMapping 等
-
-### 2.x.x mvc rest
-
-* `@RequestBody`：将请求体中的JSON数据转换成Java对象；
-* `@ResponseBody`：将返回的Java对象转换成JSON数据写入到响应体；组合 @Controller =>  @RestController
-* `@ResponseStatus`：控制响应状态
-
-### 2.x.x mvc 统一处理
-
-* `@ControllerAdvice`，组合 @ResponseBody => @RestControllerAdvice
-* @ExceptionHandler
-
-### 2.x.x mvc 参数
-
-* `@PathVariable`
-
-### 2.x.x mvc ajax
-
-* `@CrossOrigin`
-
-### 2.x.x boot auto
-
-* `@SpringBootApplication`
-* `@EnableAutoConfiguration`
-* `@SpringBootConfiguration`
-
-### 2.x.x boot condition
-
-* `@ConditionalOnClass`，classpath 下存在某个 class 时，条件才成立
-* `@ConditionalOnMissingBean`，beanFactory 内不存在某个 bean 时，条件才成立
-* `@ConditionalOnProperty`，配置文件中存在某个 property（键、值）时，条件才成立
-
-### 2.x.x boot properties
-
-* `@ConfigurationProperties`，会将当前 bean 的属性与配置文件中的键值进行绑定
-* `@EnableConfigurationProperties`，会添加两个较为重要的 bean
-  * `ConfigurationPropertiesBindingPostProcessor`，bean 后处理器，在 bean 初始化前调用下面的 binder
-  * `ConfigurationPropertiesBinder`，真正执行绑定操作
-
-## 2.x @Configuration注解的理解
-
-使用`@Configuration`标注的类是配置类，配置类相当于一个工厂，标注`@Bean`注解的方法相当于工厂方法；
-
-- `@Bean`不支持方法重载，如果有多个重载方法，仅有一个能入选为工厂方法；
-- `@Configuration`默认会为标注的类生成代理，其目的是保证@Bean方法相互调用时，仍然能够保证其单例特性；（如果设置了@Configuration注解的proxyBeanMethod为false则不会生成代理）
-
-## 2.x @Import注解的理解
-
-`@Import`注解和`@CompentScan`注解的作用类似，`@CompentScan`注解用来进行包扫描，将包中扫描到的特殊注解的类（Bean）加入到Spring容器进行管理；
-
-`@Import`注解则是通过指定一个类型来找到类，将类交给Spring容器进行管理；
-
-//   @Import(Bean1.class) // 1. 引入单个 bean
-
-//   @Import(OtherConfig.class) // 2. 引入一个配置类
-
-  @Import(MySelector.class) // 3. 通过 Selector 引入多个类
-
-//   @Import(MyRegistrar.class) // 4. 通过 beanDefinition 注册器
-
-  // 1. 同一配置类中, @Import 先解析  @Bean 后解析
-
-  // 2. 同名定义, 默认后面解析的会覆盖前面解析的
-
-  // 3. 不允许覆盖的情况下, 如何能够让 MyConfig(主配置类) 的配置优先? (虽然覆盖方式能解决)
-
-  // 4. DeferredImportSelector 最后工作, 可以简单认为先解析 @Bean, 再 Import
-
-## 2.x SpringBoot 自动配置原理
+### 2.x.x  SpringBoot自动配置原理
 
 `@SpringBootConfiguration` 是一个组合注解，由 `@ComponentScan`、`@EnableAutoConfiguration` 和 `@SpringBootConfiguration` 组成
 
@@ -2453,7 +2526,7 @@ Spring事务定义了7种传播机制：
   - `@AutoConfigurationPackage` ：用来记录所标注类的包名，此即扫描的起始包`package org.springframework.boot.autoconfigure;`，后续可以使用工具类AutoConfigurationPackages.get()方法来获得；
   - `@Import(AutoConfigurationImportSelector.class)` 用来加载 `META-INF/spring.factories` 中的自动配置类；
 
-## 2.x SpringBoot 自动配置为什么不使用 @Import 直接引入自动配置类
+### 2.x.x SpringBoot 自动配置为什么不使用 @Import 直接引入自动配置类
 
 有两个原因：
 
@@ -2465,150 +2538,25 @@ Spring事务定义了7种传播机制：
 * 由 `AutoConfigurationImportSelector.class` 去读取 `META-INF/spring.factories` 中的自动配置类，实现了弱耦合；
 * 另外 `AutoConfigurationImportSelector.class` 实现了 `DeferredImportSelector` 接口，让自动配置的解析晚于主配置的解析；
 
+### 2.x.x Spring Boot是如何启动Tomcat的
 
+- SpringBoot在启动时会先创建⼀个Spring容器；
+- 在创建Spring容器过程中，会利⽤`@ConditionalOnClass`技术来判断当前classpath中是否存在 Tomcat依赖，如果存在则会⽣成⼀个启动Tomcat的Bean;
+- Spring容器创建完之后，就会获取启动Tomcat的Bean，并创建Tomcat对象，并绑定端⼝等，然后 启动Tomcat；
 
-## 2.x Spring 中的设计模式
+## 2.x Mybatis
 
-### 2.x.x 单例模式
+### 2.x.x \#{}和${}的区别是什么
 
-区分 singleton pattern 与 Spring 中的 singleton bean
+`#{}`是预编译处理、是占位符，` ${}`是字符串替换、是拼接符；
 
-* 根据单例模式的目的 *Ensure a class only has one instance, and provide a global point of access to it* 
-* 显然 Spring 中的 singleton bean 并非实现了单例模式，singleton bean 只能保证每个容器内，相同 id 的 bean 单实例
-* 当然 Spring 中也用到了单例模式，例如
-  * org.springframework.transaction.TransactionDefinition#withDefaults
-  * org.springframework.aop.TruePointcut#INSTANCE
-  * org.springframework.aop.interceptor.ExposeInvocationInterceptor#ADVISOR
-  * org.springframework.core.annotation.AnnotationAwareOrderComparator#INSTANCE
-  * org.springframework.core.OrderComparator#INSTANCE
-
-### 2.x.x 构建器模式
-
-定义：*Separate the construction of a complex object from its representation so that the same construction process can create different representations* 
-
-它的主要亮点有三处：
-
-1. 较为灵活的构建产品对象
-
-2. 在不执行最后 build 方法前，产品对象都不可用
-
-3. 构建过程采用链式调用，看起来比较爽
-
-Spring 中体现 Builder 模式的地方：
-
-* org.springframework.beans.factory.support.BeanDefinitionBuilder
-
-* org.springframework.web.util.UriComponentsBuilder
-
-* org.springframework.http.ResponseEntity.HeadersBuilder
-
-* org.springframework.http.ResponseEntity.BodyBuilder
-
-### 2.x.x 工厂方法模式
-
-定义：*Define an interface for creating an object, but let subclasses decide which class to instantiate. Factory Method lets a class defer instantiation to subclasses*，主要是用来实现接口和实现相分离，降低耦合；
-
-根据上面的定义，Spring 中的 ApplicationContext 与 BeanFactory 中的 getBean 都可以视为工厂方法，它隐藏了 bean （产品）的创建过程和具体实现
-
-Spring 中其它工厂：
-
-* org.springframework.beans.factory.FactoryBean
-
-* @Bean 标注的静态方法及实例方法
-
-* ObjectFactory 及 ObjectProvider
-
-前两种工厂主要封装第三方的 bean 的创建过程，后两种工厂可以推迟 bean 创建，解决循环依赖及单例注入多例等问题
-
-### 2.x.x 适配器模式
-
-定义：*Convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces* ，一套接口适配成调用者所期望的接口；
-
-典型的实现有两处：
-
-* org.springframework.web.servlet.HandlerAdapter – 因为控制器实现有各种各样，比如有
-  * 大家熟悉的 @RequestMapping 标注的控制器实现
-  * 传统的基于 Controller 接口（不是 @Controller注解啊）的实现
-  * 较新的基于 RouterFunction 接口的实现
-  * 它们的处理方法都不一样，为了统一调用，必须适配为 HandlerAdapter 接口
-* org.springframework.beans.factory.support.DisposableBeanAdapter – 因为销毁方法多种多样，因此都要适配为 DisposableBean 来统一调用销毁方法 
-
-### 2.x.x 组合模式
-
-定义：*Compose objects into tree structures to represent part-whole hierarchies. Composite lets clients treat individual objects and compositions of objects uniformly* 
-
-典型实现有：
-
-* org.springframework.web.method.support.HandlerMethodArgumentResolverComposite
-* org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite
-* org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
-* org.springframework.web.servlet.view.ViewResolverComposite
-
-composite 对象的作用是，将**分散的调用集中起来，统一调用入口**，它的特征是，与具体干活的实现实现同一个接口，当调用 composite 对象的接口方法时，其实是委托具体干活的实现来完成
-
-### 2.x.x 装饰器模式
-
-定义：*Attach additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality* ，对一个对象动态地进行增强；
-
-主要用于由子类扩展方式来实现功能增强的问题，避免继承很多用不到的方法；
-
-典型实现：
-
-* org.springframework.web.util.ContentCachingRequestWrapper
-
-### 2.x.x 代理模式
-
-定义 *Provide a surrogate or placeholder for another object to control access to it* 
-
-**装饰器模式注重的是功能增强**，避免子类继承方式进行功能扩展，**而代理模式更注重控制目标的访问**；
-
-典型实现：
-
-* org.springframework.aop.framework.JdkDynamicAopProxy
-* org.springframework.aop.framework.ObjenesisCglibAopProxy
-
-### 2.x.x 责任链模式
-
-定义：*Avoid coupling the sender of a request to its receiver by giving more than one object a chance to handle the request. Chain the receiving objects and pass the request along the chain until an object handles it* 
-
-典型实现：
-
-* org.springframework.web.servlet.HandlerInterceptor
-
-### 2.x.x 观察者模式
-
-定义：*Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically* 
-
-典型实现：
-
-* org.springframework.context.ApplicationListener
-* org.springframework.context.event.ApplicationEventMulticaster
-* org.springframework.context.ApplicationEvent
-
-### 2.x.x 策略模式
-
-定义 *Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it*，根据不同的策略表现出不同的行为；
-
-典型实现：
-
-* org.springframework.beans.factory.support.InstantiationStrategy
-* org.springframework.core.annotation.MergedAnnotations.SearchStrategy
-* org.springframework.boot.autoconfigure.condition.SearchStrategy
-
-### 2.x.x 模板方法模式
-
-定义 *Define the skeleton of an algorithm in an operation, deferring some steps to subclasses. Template Method lets subclasses redefine certain steps of an algorithm without changing the algorithm's structure* 
-
-典型实现：
-
-* 大部分以 Template 命名的类，如 JdbcTemplate，TransactionTemplate
-* 很多以 Abstract 命名的类，如 AbstractApplicationContext
-
-
+ Mybatis在处理`#{}`时，会将sql中的`#{}`替换为?号，调⽤ PreparedStatement 来赋值； Mybatis在处理`${}`时，会将sql中的`${}`替换成变量的值，调⽤ Statement 来赋值； 使⽤`#{}`可以有效的防⽌ SQL 注⼊， 提⾼系统安全性；
 
 # 三、数据库
 
-## 3.x 数据库的三大范式是什么
+## 3.x 基础知识
+
+### 3.x.x 数据库的三大范式是什么
 
 - 第一范式：每个列都不可以再拆分；
 - 第二范式：在第一范式的基础上，非主键列完全依赖于主键，而不能是依赖于主键的一部分；
@@ -2619,19 +2567,77 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 - 优点:可以尽量得减少数据冗余， 使得更新快， 体积小
 - 缺点: 对于查询需要多个表进行关联， 减少写得效率增加读得效率， 更难进行索引优化
 
-## 3.x SQL的几种连接查询方式（内连接、外连接、全连接）
+### 3.x.x SQL的几种连接查询方式（内连接、外连接、全连接）
 
-- 内连接（inner join） ：
-  - 典型的联接运算，使用像 = 或 <> 之类的比较运算符）。包括相等联接和自然联接。
-  - 查出的是两张表的**交集**，两张表都有的才查出来 ；
-- 左外连接（left join）
-  - 以左表为主表（查询全部）， 右表为辅表（没有的显示null）；
-- 右外连接（right join）
-  - 以右表为主表（查询全部）， 左表为辅表（没有的显示null）；
-- 全连接（full join）
-  - 两个表的所有数据都展示出来；
+- 内连接（inner join） ：匹配2张表中相关联的记录，查出的是两张表的**交集**，两张表都有的才查出来 ；
+- 左外连接（left join）：除了匹配2张表中相关联的记录外，还会匹配左表中剩余的记 录，右表中未匹配到的字段用NULL表示
+- 右外连接（right join）：除了匹配2张表中相关联的记录外，还会匹配右表中剩余的记 录，左表中未匹配到的字段用NULL表示。在判定左表和右表时，要根据表名出现在Outer Join 的左右位置关系
+- 全连接（full join）：左外连接（left join）+右外连接（right join）；
 
-## 3.x 事务的基本特性
+### 3.x.x 什么是视图
+
+视图是一种虚拟的表，具有和物理表相同的功能。可以对视图进行增，改，查，操作，试图通常是 有一个表或者多个表的行或列的子集。对视图的修改不影响基本表。它使得我们获取数据更容易， 相比多表查询；
+
+## 3.x 语法
+
+### 3.x.x MySQL中的varchar和char有什么区别
+
+<u>char(16)</u>
+
+- 长度固定，存储字符，当插⼊的长度小于定义长度时，使用空格填充；
+- 存取速度比varchar快得多；
+- 适合存储很短的,固定⻓度的字符串，例如手机号，MD5值等；
+
+<u>varchar(16)</u>
+
+- 长度可变，存储字符，当插入长度小于定义长度时，按实际插入的长度进行存储；
+- 存取速度比char慢得多；
+- 适合存储长度不固定场景，如收获地址、邮箱地址等
+
+### 3.x.x int(11) 中的 11 的含义
+
+int(11) 中的 11，不影响字段存储的范围，只影响展示效果
+
+### 3.x.x MySQL中的datetime和timestamp有什么区别
+
+<u>datetime</u>
+
+- 8字节，可存储时间范围：1000-01-01 00:00:00到 9999-12-31 23:59:59；
+- 存储与时区无关，不会发⽣改变；
+
+<u>timestamp</u>
+
+-  4字节，可存储时间范围：1970-01-01 00:00:01 到 2038-01-19 11:14:07；
+-  存储的是与时区有关，会随数据库的时区而发⽣改变；
+
+<u>为什么timestamp只能到2038年？</u> 
+
+- MySQL的timestamp类型是4个字节，最⼤值是2的31次⽅减1，结果是2147483647， 转换成北京时间就是2038-01-19 11:14:07
+
+### 3.x.x Explain语句结果中各个字段分别表示什么
+
+| 列名          | 描述                                                         |
+| ------------- | ------------------------------------------------------------ |
+| id            | 查询语句中每出现⼀个SELECT关键字，MySQL 就会为它分配⼀个唯⼀的id值，某些⼦查询会被 优化为join查询，那么出现的id会⼀样 |
+| select_type   | SELECT关键字对应的那个查询的类型                             |
+| table         | 表名                                                         |
+| partitions    | 匹配的分区信息                                               |
+| type          | 针对单表的查询⽅式（全表扫描、索引）                         |
+| possible_keys | 可能⽤到的索引                                               |
+| key           | 实际上使⽤的索引                                             |
+| key_len       | 实际使⽤到的索引⻓度                                         |
+| ref           | 当使⽤索引列等值查询时，与索引列进行等值匹配的对象信息       |
+| rows          | 预估的需要读取的记录条数                                     |
+| filtered      | 某个表经过搜索条件过滤后剩余记录条数的百分比                 |
+| Extra         | ⼀些额外的信息，⽐如排序等                                   |
+
+### 3.x.x drop、delete与truncate的区别
+
+SQL中的drop、delete、truncate都表示删除，但是三者有一些差别 delete和truncate只删除表的数据不删除表的结构 速度,一般来说: drop> truncate >delete delete 语句是dml,这个操作会放到rollback segement中,事务提交之后才生效; 如果有相应的trigger,执行 的时候将被触发. truncate,drop是ddl, 操作立即生效,原数据不放到rollback segment中,不能回滚. 操作不触发trigger.
+
+## 3.x 事务
+
+### 3.x.x 事务的基本特性
 
 事务的四⼤特性ACID：
 
@@ -2652,7 +2658,7 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 - ⼀旦事务提交，则其所做的修改就会永久保存到数据库中。此时即使系统崩溃，修改的数据也不会丢失；
 
-## 3.x 事务的隔离级别
+### 3.x.x 事务的隔离级别
 
 事务的隔离级别越⾼，事务越安全，但是并发能⼒越差。
 
@@ -2678,7 +2684,7 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 * 在事务范围内，**仅有读读可以并发**，读写或写写会阻塞其它事务，用这种办法保证更强的一致性；
 * 错误现象：无；
 
-## 3.x 脏读现象
+### 3.x.x 脏读现象
 
 事务中的修改即使没有提交，其他事务也能看⻅，事务可以读到未提交的数据称为脏读；
 
@@ -2693,7 +2699,7 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 - tx2 **未提交**的情况下，tx1 仍然读**取到了它的更改**；
 
-## 3.x 不可重复度现象
+### 3.x.x 不可重复度现象
 
 同个事务前后多次读取，不能读到相同的数据内容，中间另⼀个事务也操作了该同⼀数据；
 
@@ -2707,7 +2713,7 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 - tx1 **在同一事务内，两次读取的结果不一致**，当然，此时 tx2 的事务已提交；
 
-## 3.x 幻读现象
+### 3.x.x 幻读现象
 
 当某个事务在读取某个范围内的记录时，另外⼀个事务⼜在该范围内插⼊了新的记录，当之前的事务 再次读取该范围的记录时，发现两次不⼀样，产⽣幻读；
 
@@ -2750,9 +2756,21 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 * 串行读隔离级别下，普通的 select 也会加共享读锁，其它事务的查询可以并发，但增删改就只能阻塞了；
 
-## 3.x 什么是MVCC
+### 3.x.x 什么是MVCC
 
-## 3.x 什么是当前读
+MVCC（Multi-Version Concurrency Control ，多版本并发控制）指的就是在使⽤READ COMMITTD、REPEATABLE READ这两种隔离级别的事务在执⾏普通的SEELCT操作时访问记录的版 本链的过程。可以使不同事务的读-写、写-读操作并发执⾏，从⽽提升系统性能。READ COMMITTD、REPEATABLE READ这两个隔离级别的⼀个很⼤不同就是：⽣成ReadView的时机不 同，READ COMMITTD在每⼀次进⾏普通SELECT操作前都会⽣成⼀个ReadView，⽽REPEATABLE READ只在第⼀次进⾏普通SELECT操作前⽣成⼀个ReadView，之后的查询操作都重复使⽤这个 ReadView就好了。
+
+多版本并发控制（MVCC=Multi-Version Concurrency Control），是一种用来解决读 - 写冲突的无 锁并发控制。也就是为事务分配单向增长的时间戳，为每个修改保存一个版本。版本与事务时间戳 关联，读操作只读该事务开始前的数据库的快照（复制了一份数据）。这样在读操作不用阻塞写操 作，写操作不用阻塞读操作的同时，避免了脏读和不可重复读
+
+### 3.x.x MVCC 可以为数据库解决什么问题
+
+在并发读写数据库时，可以做到在读操作时不用阻塞写操作，写操作也不用阻塞读操作，提高了数 据库并发读写的性能。同时还可以解决脏读、幻读、不可重复读等事务隔离问题，但不能解决更新 丢失问题
+
+### 3.x.x MVCC 的实现原理
+
+MVCC 的目的就是多版本并发控制，在数据库中的实现，就是为了解决读写冲突，它的实现原理主 要是依赖记录中的 3 个隐式字段、undo 日志、Read View 来实现的
+
+### 3.x.x 什么是当前读
 
 当前读即读**取最新提交**的数据，以下SQL属于当前读：
 
@@ -2762,7 +2780,7 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 当前读本质上是基于锁的并发读操作；
 
-## 3.x 什么是快照读
+### 3.x.x 什么是快照读
 
 快照读是读取**某一个快照建立时**（可以理解为某一时间点）的数据，也称为一致性读。
 
@@ -2824,12 +2842,14 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 * tx1 内的修改必须重新建立快照，否则，就会发生丢失更新的问题
 
-## 3.x Mysql常见的存储引擎，新版Mysql默认是哪个
+## 3.x 引擎
+
+### 3.x.x Mysql常见的存储引擎，新版Mysql默认是哪个
 
 常⻅的有多类，InnoDB、MyISAM、MEMORY、MERGE、ARCHIVE、CSV等，⼀般⽐较常⽤的有InnoDB、MyISAM；
 MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 
-## 3.x InnoDB vs MyISAM
+### 3.x.x InnoDB vs MyISAM
 
 <u>InnoDB</u>
 
@@ -2854,11 +2874,13 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 * 不支持物理外键；
 * 会保存表的总行数，支持全文索引；
 
-## 3.x Innodb是如何实现事务的
+### 3.x.x Innodb是如何实现事务的
 
-## 3.x Explain语句结果中各个字段分别表示什么
+Innodb通过Buffer Pool，LogBuffer，Redo Log，Undo Log来实现事务，以⼀个update语句为例： 1. Innodb在收到⼀个update语句后，会先根据条件找到数据所在的⻚，并将该⻚缓存在Buffer Pool 中 2. 执⾏update语句，修改Buffer Pool中的数据，也就是内存中的数据 3. 针对update语句⽣成⼀个RedoLog对象，并存⼊LogBuffer中 4. 针对update语句⽣成undolog⽇志，⽤于事务回滚 5. 如果事务提交，那么则把RedoLog对象进⾏持久化，后续还有其他机制将Buffer Pool中所修改的数 据⻚持久化到磁盘中 6. 如果事务回滚，则利⽤undolog⽇志进⾏回滚
 
-## 3.x 常见的索引数据结构及其实现
+## 3.x 索引
+
+### 3.x.x 常见的索引数据结构及其实现
 
 <u>哈希索引</u>
 
@@ -2887,9 +2909,7 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 >
 > * $log_{10}(N) /  log_{10}(M)$ 其中 N 为数据行数，M 为分叉数
 
-
-
-## 3.x MySQL的功能索引
+### 3.x.x MySQL的功能索引
 
 | 索引名称    | 特点                                                         | 创建语句                                                     |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -2900,9 +2920,7 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 | 覆盖索引 | 索引包含所需要的值，不需要“回表”查 询， ⽐如查询两个字段，刚好是组合索引的两个字段 |                                                              |
 | 全文索引 | 对内进行分词搜索，仅可⽤于 Myisam， Innodb更多使用ElasticSearch做搜索 | `ALTER TABLE table_name ADD FULLTEXT ( filed_name )`         |
 
-
-
-## 3.x InnoDB 索引特点
+### 3.x.x InnoDB 索引特点
 
 聚簇索引：主键值作为索引数据，叶子节点还包含了所有字段数据，索引和数据是存储在一起的
 
@@ -2921,7 +2939,50 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 * 上图中，如果执行查询 `select empno, ename, sal from emp where sal = 800`，这时候可以利用二级索引定位到 800 这个工资，同时还能知道主键值 7369
 * 但 select 字句中还出现了 ename 字段，在二级索引中不存在，因此需要根据主键值 7369 查询聚簇索引来获取 ename 的信息，这个过程俗称**回表**
 
-## 3.x B树和B+树的区别
+### 3.x.x 聚簇索引与非聚簇索引
+
+聚集索引与非聚集索引的区别是：叶节点是否存放一整行记录
+
+* **聚簇索引**: 将数据存储与索引放到了一块,索引结构的叶子节点保存了行数据.
+* **非聚簇索引**：将数据与索引分开存储，索引结构的叶子节点指向了数据对应的位置.
+
+InnoDB 主键使用的是聚簇索引，MyISAM 不管是主键索引，还是二级索引使用的都是非聚簇索引。
+
+在InnoDB引擎中，主键索引采用的就是聚簇索引结构存储。
+
+聚簇索引（聚集索引）
+
+* 聚簇索引是一种数据存储方式，InnoDB的聚簇索引就是按照主键顺序构建 B+Tree结构。B+Tree 的叶子节点就是行记录，行记录和主键值紧凑地存储在一起。 这也意味着 InnoDB 的主键索引就是数据表本身，它按主键顺序存放了整张表的数据，占用的空间就是整个表数据量的大小。通常说的主键索引就是聚集索引。
+* InnoDB的表要求必须要有聚簇索引：
+  * 如果表定义了主键，则主键索引就是聚簇索引
+  * 如果表没有定义主键，则第一个非空unique列作为聚簇索引
+  * 否则InnoDB会从建一个隐藏的row-id作为聚簇索引
+* 辅助索引
+  InnoDB辅助索引，也叫作二级索引，是根据索引列构建 B+Tree结构。但在 B+Tree 的叶子节点中只存了索引列和主键的信息。二级索引占用的空间会比聚簇索引小很多， 通常创建辅助索引就是为了提升查询效率。一个表InnoDB只能创建一个聚簇索引，但可以创建多个辅助索引。
+
+![image-20230423233948666](interview_notes.assets/image-20230423233948666.png)
+
+**非聚簇索引**
+
+与InnoDB表存储不同，MyISM使用的是非聚簇索引， 非聚簇索引的两棵B+树看上去没什么不同 ，节点的结构完全一致只是存储的内容不同而已，主键索引B+树的节点存储了主键，辅助键索引B+树存储了辅助键。
+
+表数据存储在独立的地方，这两颗B+树的叶子节点都使用一个地址指向真正的表数据，对于表数据来说，这两个键没有任何差别。由于 索引树是独立的，通过辅助键检索无需访问主键的索引树 。
+
+![image-20230423234021706](interview_notes.assets/image-20230423234021706.png)
+
+**聚簇索引的优点**
+
+1. 当你需要取出一定范围内的数据时，用聚簇索引也比用非聚簇索引好。
+2. 当通过聚簇索引查找目标数据时理论上比非聚簇索引要快，因为非聚簇索引定位到对应主键时还要多一次目标记录寻址,即多一次I/O。
+3. 使用覆盖索引扫描的查询可以直接使用页节点中的主键值。
+
+**聚簇索引的缺点**
+
+1. 插入速度严重依赖于插入顺序 。
+2. 更新主键的代价很高，因为将会导致被更新的行移动 。
+3. 二级索引访问需要两次索引查找，第一次找到主键值，第二次根据主键值找到行数据。
+
+### 3.x.x B树和B+树的区别
 
 无论 BTree 还是 B+Tree都是n叉平衡树，每个叶子节点到根节点距离都相同；
 
@@ -2940,9 +3001,11 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 
 ![image-20210901170954328](interview_notes.assets/image-20210901170954328.png)
 
-## 3.x 为什么Mysql使用B+树
+### 3.x.x 为什么Mysql使用B+树
 
-## 3.x 索引的优缺点
+B树的特点： 1. 节点排序 2. ⼀个节点了可以存多个元素，多个元素也排序了 B+树的特点： 1. 拥有B树的特点 2. 叶⼦节点之间有指针 3. ⾮叶⼦节点上的元素在叶⼦节点上都冗余了，也就是叶⼦节点中存储了所有的元素，并且排好顺序 Mysql索引使⽤的是B+树，因为索引是⽤来加快查询的，⽽B+树通过对数据进⾏排序所以是可以提⾼查 询速度的，然后通过⼀个节点中可以存储多个元素，从而可以使得B+树的⾼度不会太⾼，在Mysql中⼀ 个Innodb⻚就是⼀个B+树节点，⼀个Innodb⻚默认16kb，所以⼀般情况下⼀颗两层的B+树可以存2000万行左右的数据，然后通过利⽤B+树叶⼦节点存储了所有数据并且进⾏了排序，并且叶⼦节点之间有指 针，可以很好的⽀持全表扫描，范围查找等SQL语句。
+
+### 3.x.x 索引的优缺点
 
 <u>索引优点</u>
 
@@ -2965,7 +3028,11 @@ MySQL 5.5以上的版本默认是InnoDB，5.5之前默认存储引擎是MyISAM
 - 根据业务创建适合的索引类型，比如某个字段常⽤来做查询条件，则为这个字段建⽴索引提⾼查询速度
 - 组合索引选择业务查询**最相关**的字段
 
-## 3.x 索引命中需要注意什么
+### 3.x.x 最左前缀原则是什么
+
+当⼀个SQL想要利⽤索引是，就⼀定要提供该索引所对应的字段中最左边的字段，也就是拍在最前⾯的 字段，比如针对a,b,c三个字段建⽴了⼀个联合索引，那么在写⼀个sql时就⼀定要提供a字段的条件，这 样才能用到联合索引，这是由于在建⽴a,b,c三个字段的联合索引时，底层的B+树是按照a,b,c三个字段 从左往右去比较大小进行排序的，所以如果想要利用B+树进⾏快速查找也得符合这个规则；
+
+### 3.x.x 索引命中需要注意什么
 
 <u>索引用于排序</u>：
 
@@ -3115,9 +3182,41 @@ explain select * from big_person where first_name not in ('Mark', 'Kevin','David
 explain select id from big_person where first_name not in ('Mark', 'Kevin','David');
 ```
 
+### 3.x.x 什么时候不要使用索引
 
+- 经常增删改的列不要建立索引；
+- 有大量重复的列不建立索引；
+- 表记录太少不要建立索引；
 
-## 3.x 查询语句执行流程
+### 3.x.x 使用索引一定可以提升效率吗
+
+索引就是排好序的,帮助我们进行快速查找的数据结构.
+
+简单来讲，索引就是一种将数据库中的记录按照特殊形式存储的数据结构。通过索引，能够显著地提高数据查询的效率，从而提升服务器的性能.
+
+索引的优势与劣势
+
+- 优点
+
+  - 提高数据检索的效率,降低数据库的IO成本
+  - 通过索引列对数据进行排序,降低数据排序的成本,降低了CPU的消耗
+- 缺点
+
+  - 创建索引和维护索引要耗费时间，这种时间随着数据量的增加而增加
+  - 索引需要占物理空间，除了数据表占用数据空间之外，每一个索引还要占用一定的物理空间
+  - 当对表中的数据进行增加、删除和修改的时候，索引也要动态的维护，降低了数据的维护速度
+- 创建索引的原则
+
+  - 在经常需要搜索的列上创建索引，可以加快搜索的速度；
+  - 在作为主键的列上创建索引，强制该列的唯一性和组织表中数据的排列结构；
+  - 在经常用在连接的列上，这些列主要是一些外键，可以加快连接的速度；
+  - 在经常需要根据范围进行搜索的列上创建索引，因为索引已经排序，其指定的范围是连续的；
+  - 在经常需要排序的列上创建索引，因为索引已经排序，这样查询可以利用索引的排序，加快排序查询时间；
+  - 在经常使用在WHERE子句中的列上面创建索引，加快条件的判断速度。
+
+## 3.x 查询
+
+### 3.x.x 查询语句执行流程
 
 <u>执行 SQL 语句 select * from user where id = 1 时发生了什么</u>
 
@@ -3130,7 +3229,7 @@ explain select id from big_person where first_name not in ('Mark', 'Kevin','Davi
 - 执行器：根据存储引擎类型，调用存储引擎接口；
 - 存储引擎：数据的读写接口，索引、表都在此层实现；
 
-## 3.x 数据库查询指令的执行顺序
+### 3.x.x 数据库查询指令的执行顺序
 
 - from 从哪个表查询；
 - where 初步过滤条件
@@ -3139,39 +3238,23 @@ explain select id from big_person where first_name not in ('Mark', 'Kevin','Davi
 - select 查看哪些结果字段
 - order by 按照怎样的顺序进行排序返回[重点]
 
-## 3.x MySQL中的varchar和char有什么区别
+### 3.x.x 千万级MySQL数据表分页查询优化
 
-<u>char(16)</u>
+### 3.x.x Mysql慢查询该如何优化
 
-- 长度固定，存储字符，当插⼊的长度小于定义长度时，使用空格填充；
-- 存取速度比varchar快得多；
-- 适合存储很短的,固定⻓度的字符串，例如手机号，MD5值等；
+- 检查是否⾛了索引，如果没有则优化SQL利⽤索引
+- 检查所利⽤的索引，是否是最优索引
+- 检查所查字段是否都是必须的，是否查询了过多字段，查出了多余数据
+- 检查表中数据是否过多，是否应该进⾏分库分表了
+- 检查数据库实例所在机器的性能配置，是否太低，是否可以适当增加资源
 
-<u>varchar(16)</u>
+### 3.x.x 为什么 SELECT COUNT(*) FROM table 在 InnoDB 比MyISAM 慢
 
-- 长度可变，存储字符，当插入长度小于定义长度时，按实际插入的长度进行存储；
-- 存取速度比char慢得多；
-- 适合存储长度不固定场景，如收获地址、邮箱地址等
+对于 SELECT COUNT(*) FROM table 语句，在没有 WHERE 条件的情况下，InnoDB 比 MyISAM 可 能会慢很多，尤其在大表的情况下。因为，InnoDB 是去实时统计结果，会全表扫描；而 MyISAM 内部维持了一个计数器，预存了结果，所以直接返回即可
 
-## 3.x MySQL中的datetime和timestamp有什么区别
+## 3.x 日志
 
-<u>datetime</u>
-
-- 8字节，可存储时间范围：1000-01-01 00:00:00到 9999-12-31 23:59:59；
-- 存储与时区无关，不会发⽣改变；
-
-<u>timestamp</u>
-
--  4字节，可存储时间范围：1970-01-01 00:00:01 到 2038-01-19 11:14:07；
-- 存储的是与时区有关，会随数据库的时区而发⽣改变；
-
-<u>为什么timestamp只能到2038年？</u> 
-
-- MySQL的timestamp类型是4个字节，最⼤值是2的31次⽅减1，结果是2147483647， 转换成北京时间就是2038-01-19 11:14:07
-
-## 3.x 千万级MySQL数据表分页查询优化
-
-## 3.x Mysql有多少种常见的日志
+### 3.x.x Mysql有多少种常见的日志
 
 - redo 重做日志
   - 用来确保事务的持久性，防止在发⽣故障时**脏页数据**（缓存和磁盘不一致的数据）未写⼊磁盘。
@@ -3191,7 +3274,7 @@ explain select id from big_person where first_name not in ('Mark', 'Kevin','Davi
 - general log 普通日志
   - 用于记录数据库操作明细，默认关闭，开启会降低数据库性能；
 
-## 3.x undo log 与 redo log
+### 3.x undo log 与 redo log
 
 <u>undo log</u>
 
@@ -3222,9 +3305,9 @@ redo log 的作用主要是实现 ACID 中的持久性，保证提交的数据�
   * 1 - 每次事务提交将日志 write and flush（默认值）
   * 2 - 每次事务提交将日志 write，每隔 1s flush 到磁盘，意味着 write 意味着写入操作系统缓存，如果 MySQL 挂了，而操作系统没挂，那么数据不会丢失
 
+## 3.x 锁
 
-
-## 3.x Mysql锁有哪些
+### 3.x Mysql锁有哪些
 
 <u>全局锁</u>
 
@@ -3302,8 +3385,6 @@ flush tables with read lock;
 > ***注意***
 >
 > * 它们锁定的其实都是**索引**上的行与间隙，根据索引的有序性来确定间隙
-
-## 3.x Mysql慢查询该如何优化
 
 # 四、缓存
 
