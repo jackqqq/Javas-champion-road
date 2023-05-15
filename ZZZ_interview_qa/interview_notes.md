@@ -1421,321 +1421,11 @@ Spring主要由以下几个模块组成：
 - *静态工厂注入；*
 - *实例工厂；*
 
-### 2.x.x Spring refresh
-
-<u>Spring refresh 概述</u>
-
-refresh 是 AbstractApplicationContext 中的一个方法，**负责初始化 ApplicationContext 容器**，容器必须调用 refresh 才能正常工作;
-
-它的内部主要会调用 12 个方法，我们把它们称为 refresh 的 12 个步骤：
-
-1. prepareRefresh：做好准备工作；
-
-2. obtainFreshBeanFactory：创建或获取BeanFactory；
-
-3. prepareBeanFactory：准备BeanFactory；
-
-4. postProcessBeanFactory：子类扩展BeanFactory；
-
-5. invokeBeanFactoryPostProcessors：后处理器扩展BeanFactory；
-
-6. registerBeanPostProcessors：准备Bean后处理器；
-
-7. initMessageSource：为ApplicationContext提供国际化功能；
-
-8. initApplicationEventMulticaster：为ApplicationContext提供事件发布器；
-
-9. onRefresh：留给子类扩展；
-
-10. registerListeners：为ApplicationContext准备监听器；
-
-11. finishBeanFactoryInitialization：初始化单例Bean，执行Bean后处理器扩展；
-
-12. finishRefresh：准备生命周期管理器，发布ContextRefreshed事件；
-
-> ***功能分类***
->
-> * 1 为**准备环境**
->
-> * 2 3 4 5 6 为**准备 BeanFactory**
->
-> * 7 8 9 10 12 为**准备 ApplicationContext**
->
-> * 11 为**初始化 BeanFactory 中非延迟单例 bean**
-
-
-
-<u>prepareRefresh</u>
-
-这一步创建和准备了 **Environment 对象**，赋值给了ApplicationContext 的一个成员变量
-
-* Environment 对象的作用之一是为后续 `@Value`值注入时提供**键值信息**；
-* Environment 分成三个主要部分：
-  * systemProperties：保存 Java 环境键值；
-  * systemEnvironment ：保存系统环境键值；
-  * 自定义 PropertySource： 保存自定义键值，例如来自于 *.properties 文件的键值；
-
-![image-20210902181639048](interview_notes.assets/image-20210902181639048.png)
-
-<u>obtainFreshBeanFactory</u>
-
-这一步获取（或创建） **BeanFactory对象**，同样地也赋值给 ApplicationContext 的一个成员变量
-
-BeanFactory 的作用是<u>负责 bean 的创建、依赖注入和初始化</u>，bean 的各项特征由 **BeanDefinition** 定义：
-* BeanDefinition 作为 bean 的设计蓝图，<u>规定了 bean 的特征</u>，如单例多例、依赖关系、初始销毁方法等；
-* BeanDefinition 的来源有多种多样，可以是通过 xml 获得、配置类获得、组件扫描获得，也可以是编程添加；
-
-* 所有的 BeanDefinition 会存入 BeanFactory 中的 **beanDefinitionMap 集合**；
-
-![image-20210902182004819](interview_notes.assets/image-20210902182004819.png)
-
-<u>prepareBeanFactory</u>
-
-这一步会进一步完善 BeanFactory，为它的各项成员变量赋值:
-
-* **beanExpressionResolver** 用来<u>解析 SpEL</u>，常见实现为 StandardBeanExpressionResolver
-* **propertyEditorRegistrars** 会注册<u>类型转换器</u>
-  * 使用的实现类为ResourceEditorRegistrar 
-  * 应用 ApplicationContext 提供的 Environment 完成 ${ } 解析
-* **resolvableDependency**（常见实现类：registerResolvableDependency） 来<u>注册特殊的bean</u>（ beanFactory 以及 ApplicationContext），让它们也能用于依赖注入；
-* **beanPostProcessors** 是 bean 后处理器集合，会工作在 bean 的生命周期各个阶段做一些增强，此处会添加两个（不常用）：
-  * ApplicationContextAwareProcessor 用来解析 Aware 接口
-  * ApplicationListenerDetector 用来识别容器中 ApplicationListener 类型的 bean
-
-![image-20210902182541925](interview_notes.assets/image-20210902182541925.png)
-
-<u>postProcessBeanFactory</u>
-
-这一步是空实现，留给**子类**扩展：
-
-* 一般 Web 环境的 ApplicationContext 都要利用它注册新的 Scope，完善 Web 下的 BeanFactory；
-
-* 这里体现的是模板方法设计模式；
-
-<u>invokeBeanFactoryPostProcessors</u>
-
-这一步会调用 **beanFactory 后处理器**，充当 beanFactory 的扩展点，可以用来补充或修改 BeanDefinition
-
-* 常见的 beanFactory 后处理器有
-  * ConfigurationClassPostProcessor：解析 `@Configuration`、`@Bean`、`@Import`、`@PropertySource` 等
-  * *PropertySourcesPlaceHolderConfigurer：替换 BeanDefinition 中的 ${ }*（目前很少用）；
-  * MapperScannerConfigurer：补充 Mapper 接口对应的 BeanDefinition
-
-![image-20210902183232114](interview_notes.assets/image-20210902183232114.png)
-
-<u>registerBeanPostProcessors</u>
-
-这一步是继续从 beanFactory 中找出 **bean 后处理器**，添加至 beanPostProcessors 集合中；
-
-* bean 后处理器，和beanFactory的后处理器做区别，bean的后处理器是对bean的创建过程中做各种功能增强，充当 bean 的扩展点，可以工作在 bean 的实例化、依赖注入、初始化阶段，常见的有：
-  * AutowiredAnnotationBeanPostProcessor，功能有：解析 `@Autowired`，`@Value` 注解；
-  * CommonAnnotationBeanPostProcessor，功能有：解析 `@Resource`，`@PostConstruct`，`@PreDestroy`；
-  * AnnotationAwareAspectJAutoProxyCreator，功能有：为符合切点的目标 bean 自动创建代理；
-
-![image-20210902183520307](interview_notes.assets/image-20210902183520307.png)
-
-<u>initMessageSource</u>
-
-这一步是为 ApplicationContext 添加 **messageSource 成员**，实现国际化功能；
-
-* 去 beanFactory 内找名为 messageSource 的 bean，如果没有，则提供空的 MessageSource 实现
-* beanFactory没有，可以看作是ApplicationContext独有的功能；
-
-![image-20210902183819984](interview_notes.assets/image-20210902183819984.png)
-
-<u>initApplicationContextEventMulticaster</u>
-
-这一步为 ApplicationContext 添加事件广播器**applicationContextEventMulticaster成员**，它的作用是发布事件给监听器；
-
-* 去 beanFactory 找名为 applicationEventMulticaster 的 bean 作为事件广播器，若没有，会创建默认的事件广播器
-* 之后就可以调用 ApplicationContext.publishEvent(事件对象) 来发布事件
-
-![image-20210902183943469](interview_notes.assets/image-20210902183943469.png)
-
-<u>onRefresh</u>
-
-这一步是空实现，留给**子类**扩展；
-
-* <u>SpringBoot 中的子类在这里准备了 WebServer，即内嵌 web 容器</u>；
-
-* 体现的是模板方法设计模式；
-
-<u>registerListeners</u>
-
-这一步会从多种途径找到事件监听器，并添加至 applicationEventMulticaster；
-
-* 事件监听器顾名思义，用来**接收事件广播器发布的事件**，有如下来源：
-  * 事先编程添加的
-  * 来自容器中的 bean
-  * 来自于 @EventListener 的解析
-* 要实现事件监听器，只需要实现 ApplicationListener 接口，重写其中 onApplicationEvent(E e) 方法即可
-
-![image-20210902184343872](interview_notes.assets/image-20210902184343872.png)
-
-<u>finishBeanFactoryInitialization</u>
-
-这一步会将 剩余beanFactory 的成员补充完毕，并初始化所有非延迟单例 bean；
-
-* conversionService ：是一套转换机制，作为<u>对 PropertyEditor 的补充</u>；
-* embeddedValueResolvers ：内嵌值解析器，用来解析 @Value 中的 ${ }，<u>借用的是 Environment 的功能</u>；
-* singletonObjects ：**单例池**，缓存所有**非延迟单例对象**
-  * 对象的创建都分三个阶段（创建、依赖注入、初始化），每一阶段都有不同的 bean 后处理器参与进来，扩展功能；
-
-![image-20210902184641623](interview_notes.assets/image-20210902184641623.png)
-
-<u>finishRefresh</u>
-
-这一步会为 ApplicationContext 添加 **lifecycleProcessor 成员**，用来控制容器内需要生命周期管理的 bean；
-
-* 如果容器中有名称为 lifecycleProcessor 的 bean 就用它，否则创建默认的生命周期管理器；
-* 准备好生命周期管理器，就可以实现：
-  * 调用 context 的 start，即可触发<u>所有</u>实现 LifeCycle 接口 bean 的 start
-  * 调用 context 的 stop，即可触发<u>所有</u>实现 LifeCycle 接口 bean 的 stop
-* 发布 ContextRefreshed 事件，整个 refresh 执行完成；
-
-![image-20210902185052433](interview_notes.assets/image-20210902185052433.png)
-
-
-
 ### 2.x.x Spring bean 生命周期
 
-<u>bean 生命周期概述</u>
+![image.png](interview_notes.assets/cf1072694ce9496aa04c3c6fde40c38a.png)
 
-源码入口：
 
-```java
-	@SuppressWarnings("unchecked")
-	protected <T> T doGetBean(
-			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
-			throws BeansException {
-```
-
-bean 的生命周期从调用 beanFactory 的 getBean 开始，到这个 bean 被销毁，可以总结为以下七个阶段：
-
-1. 处理名称，检查缓存
-2. 处理父子容器
-3. 处理 dependsOn
-4. 选择 Scope 策略，按Scope创建bean
-   1. singleton
-   2. prototype
-   3. 其他scope
-5. **创建 bean**
-   1. 创建 bean 实例：@Autowired→唯一带参构造→默认构造；
-   2. 依赖注入：@Autowired @Value，@Resource，ByName ByType，精确指定；
-   3. 初始化：Aware 接口处理，@PostConstruct，InitializingBean，initMethod，创建代理；
-   4. 登记可销毁 bean；
-6. 类型转换处理
-7. **销毁 bean**
-
-> ***注意***
->
-> * 划分的阶段和名称并不重要，重要的是理解整个过程中做了哪些事情
-
-<u>处理名称，检查缓存</u>
-
-这一步会处理别名，将别名解析为实际名称；
-
-* 对 FactoryBean 也会特殊处理，如果以 & 开头表示要获取 FactoryBean 本身，否则表示要获取其产品；
-* 这里针对单例对象会检查<u>一级、二级、三级缓存</u>：
-  * singletonFactories：三级缓存，存放单例工厂对象
-  * earlySingletonObjects：二级缓存，存放单例工厂的产品对象
-    * 如果发生循环依赖，产品是代理；
-    * 无循环依赖，产品是原始对象
-  * singletonObjects：一级缓存，存放单例成品对象
-
-<u>处理父子容器</u>
-
-如果当前容器根据名字找不到这个 bean，此时若父容器存在，则执行父容器的 getBean 流程；
-
-* 父子容器的 bean 名称可以重复（优先子容器的bean）；
-
-<u>处理 dependsOn</u>
-
-如果当前 bean 有通过 dependsOn 指定了**非显式依赖的 bean**，这一步会提前创建这些 dependsOn 的 bean ；
-
-* 所谓非显式依赖，就是指两个 bean 之间不存在直接依赖关系，但需要控制它们的创建先后<u>顺序</u>
-
-<u>选择 Scope 策略</u>
-
-可以理解为从XXX范围内找到这个bean；
-
-* 对于 <u>singleton scope</u>，单例bean：
-  * 销毁流程：从refresh被创建到clone被销毁，BeanFactory会记录哪些bean要调用销毁方法；
-  * 创建流程：首先到**单例池**去获取 bean，如果有则直接返回，没有再进入创建流程
-* 对于 <u>prototype scope</u>，多例bean：
-  * 销毁流程：从首次getBean被创建到调用BeanFactory的destroyBean被销毁；
-  * 创建流程：**不缓存bean**，每次都会进入创建流程；
-* 对于自定义 scope，例如 request，
-  * 销毁流程：从首次getBean被创建，到request结束前被销毁；
-  * 创建流程：首先到 **request 域**获取 bean，如果有则直接返回，没有再进入创建流程；
-
-<u>创建bean</u>
-
-![image-20230410221500572](interview_notes.assets/image-20230410221500572.png)
-
-1. 创建 bean 实例
-
-| **要点**                                 | **总结**                                                     |
-| ---------------------------------------- | ------------------------------------------------------------ |
-| 有自定义 TargetSource 的情况             | 由 AnnotationAwareAspectJAutoProxyCreator 创建代理返回       |
-| Supplier 方式创建 bean 实例              | 为 Spring 5.0 新增功能，方便编程方式创建  bean  实例         |
-| FactoryMethod 方式  创建 bean  实例      | ① 分成静态工厂与实例工厂；② 工厂方法若有参数，需要对工厂方法参数进行解析，利用  resolveDependency；③ 如果有多个工厂方法候选者，还要进一步按权重筛选 |
-| **AutowiredAnnotationBeanPostProcessor** | ① 优先选择带  @Autowired  注解的构造；② 若有唯一的带参构造，也会入选 |
-| mbd.getPreferredConstructors             | 选择所有公共构造，这些构造之间按权重筛选                     |
-| **采用默认构造**                         | 如果上面的后处理器和 BeanDefiniation 都没找到构造，采用默认构造，<u>即使是私有的</u> |
-
-2. 依赖注入
-
-| **要点**                                                     | **总结**                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| **AutowiredAnnotationBeanPostProcessor(注解匹配)**           | 识别   `@Autowired`  及 `@Value`  标注的成员，封装为  **InjectionMetadata** 进行依赖注入 |
-| **CommonAnnotationBeanPostProcessor(注解匹配)**              | 识别   `@Resource`  标注的成员，封装为  **InjectionMetadata** 进行依赖注入 |
-| resolveDependency                                            | 用来查找要装配的值，可以识别：① Optional；② ObjectFactory 及 ObjectProvider；③ @Lazy  注解；④ @Value  注解（${  }, #{ }, 类型转换）；⑤ 集合类型（Collection，Map，数组等）；⑥ 泛型和  @Qualifier（用来区分类型歧义）；⑦ primary  及名字匹配（用来区分类型歧义） |
-| **AUTOWIRE_BY_NAME(根据名称匹配)**                           | 根据成员名字找 bean 对象，修改 mbd 的 propertyValues，不会考虑简单类型的成员 |
-| **AUTOWIRE_BY_TYPE(根据类型匹配)**                           | 根据成员类型执行 resolveDependency 找到依赖注入的值，修改  mbd 的 propertyValues |
-| **applyPropertyValues(精确指定**，即xml中的`<property name ref|value/>`) | 根据 mbd 的 propertyValues 进行依赖注入                      |
-
-3. 初始化
-
-| **要点**                  | **总结**                                                     |
-| ------------------------- | ------------------------------------------------------------ |
-| **内置 Aware 接口的装配** | 包括 BeanNameAware，BeanFactoryAware 等                      |
-| **扩展 Aware 接口的装配** | 由 ApplicationContextAwareProcessor 解析，执行时机在  postProcessBeforeInitialization |
-| **@PostConstruct**        | 由 CommonAnnotationBeanPostProcessor 解析，执行时机在  postProcessBeforeInitialization |
-| **InitializingBean**      | 通过接口回调执行初始化                                       |
-| **initMethod**            | 根据 BeanDefinition 得到的初始化方法执行初始化，即 `<bean init-method>` 或 @Bean(initMethod) |
-| **创建 aop 代理**         | 由 AnnotationAwareAspectJAutoProxyCreator 创建，执行时机在  postProcessAfterInitialization |
-
-4. 注册可销毁 bean
-
-在这一步判断并登记可销毁 bean
-
-* 判断依据：
-  * 如果实现了 `DisposableBean` 或 `AutoCloseable` 接口，则为可销毁 bean；
-  * 如果自定义了 `destroyMethod`，则为可销毁 bean；
-  * 如果采用 @Bean 没有指定 destroyMethod，则采用自动推断方式获取销毁方法名（close，shutdown）；
-  * 如果有 `@PreDestroy `标注的方法；
-* 存储位置：
-  * singleton scope 的可销毁 bean 会存储于 **beanFactory 的成员**当中；
-  * 自定义 scope 的可销毁 bean 会存储于**对应的域对象**当中；
-  * prototype scope **不会存储**，需要自己找到此对象销毁；
-
-存储时都会封装为 **DisposableBeanAdapter 类型**对销毁方法的调用进行适配（适配器模式）；
-
-<u>类型转换处理</u>
-
-当 getBean 的 requiredType 参数与实际得到的对象类型不同时，会尝试进行类型转换；
-
-<u>销毁 bean</u>
-
-* 销毁时机：
-  * singleton bean 的销毁在 **ApplicationContext.close** 时，此时会找到所有 DisposableBean 的名字，逐一销毁；
-  * 自定义 scope bean 的销毁在**作用域对象生命周期结束**时；
-  * prototype bean 的销毁可以通过自己**手动调用 AutowireCapableBeanFactory.destroyBean** 方法执行销毁；
-* 同一 bean 中不同形式销毁方法的调用次序：
-  * 优先后处理器销毁，即 `@PreDestroy`；
-  * 其次` DisposableBean` 接口销毁；
-  * 最后` destroyMethod` 销毁（包括自定义名称，推断名称，AutoCloseable 接口 多选一）；
 
 ### 2.x.x Spring 中 ApplicationContext 和 BeanFactory 的区别
 
@@ -2441,6 +2131,14 @@ composite 对象的作用是，将**分散的调用集中起来，统一调用�
 
 ### 2.x.x Spring MVC执行流程
 
+- 用户发送请求至前端控制器 DispatcherServlet；
+- DispatcherServlet 收到请求调用 HandlerMapping，找到具体的Controller，生成Controller及Controller拦截器，并返回给 DispatcherServlet；
+- DispatcherServlet 调用 HandlerAdapter 处理器适配器，经过适配调用具体的Controller ；
+- Controller 执行完成返回 ModelAndView；
+- HandlerAdapter 将 Controller 执行结果 ModelAndView 返回给 DispatcherServlet；
+- DispatcherServlet 将 ModelAndView 传给 ViewReslover，ViewReslover 解析后返回具体 View；
+- DispatcherServlet 根据 View 进行渲染视图，响应用户；
+
 **<u>初始化阶段</u>**
 
 - 在 Web 容器第一次用到 **DispatcherServlet** 的时候，会创建其对象并执行 **init** 方法：
@@ -2638,7 +2336,12 @@ int(11) 中的 11，不影响字段存储的范围，只影响展示效果
 
 ### 3.x.x drop、delete与truncate的区别
 
-SQL中的drop、delete、truncate都表示删除，但是三者有一些差别 delete和truncate只删除表的数据不删除表的结构 速度,一般来说: drop> truncate >delete delete 语句是dml,这个操作会放到rollback segement中,事务提交之后才生效; 如果有相应的trigger,执行 的时候将被触发. truncate,drop是ddl, 操作立即生效,原数据不放到rollback segment中,不能回滚. 操作不触发trigger.
+SQL中的drop、delete、truncate都表示删除；
+
+- `delete`和`truncate`：只删除表的数据不删除表的结构；
+- 速度：一般来说: drop> truncate >delete
+- `delete`语句是dml,这个操作会放到rollback segement中,事务提交之后才生效; 如果有相应的trigger,执行 的时候将被触发；
+- `truncate`，`drop`是ddl, 操作立即生效,原数据不放到rollback segment中,不能回滚. 操作不触发trigger；
 
 ## 3.x 事务
 
@@ -2648,7 +2351,7 @@ SQL中的drop、delete、truncate都表示删除，但是三者有一些差别 d
 
 <u>原⼦性Atomicity</u>
 
-- ⼀个事务必须被事务不可分割的最⼩⼯作单元，整个操作要么全部成功，要么全部失败；
+- ⼀个事务必须被事务不可分割的最小工作单元，整个操作要么全部成功，要么全部失败；
 - ⼀般就是通过 commit和rollback来控制；
 
 <u>⼀致性Consistency</u>
@@ -2958,7 +2661,7 @@ Innodb通过Buffer Pool，LogBuffer，Redo Log，Undo Log来实现事务，以�
 >
 > * $log_{10}(N) /  log_{10}(M)$ 其中 N 为数据行数，M 为分叉数
 
-### 3.x.x MySQL的功能索引
+### 3.x.x MySQL的功能索引类型
 
 | 索引名称    | 特点                                                         | 创建语句                                                     |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -3478,8 +3181,7 @@ flush tables with read lock;
 
 ### 3.x.x 乐观锁和悲观锁
 
-- 数据库管理系统（DBMS）中的并发控制的任务是确保在多个事务同时存取同一数据时不破坏事务的隔离性和一致性以及数据库的统一性；
-- 乐观并发控制（乐观锁）和悲观并发控制（悲观锁）是并 发控制主要采用的技术手段
+数据库管理系统（DBMS）中的并发控制的任务是确保在多个事务同时存取同一数据时不破坏事务的隔离性和一致性以及数据库的统一性，乐观并发控制（乐观锁）和悲观并发控制（悲观锁）是并 发控制主要采用的技术手段：
 
 **<u>悲观锁：</u>**
 
@@ -3491,13 +3193,9 @@ flush tables with read lock;
 - 假设不会发生并发冲突，每次去查询数据的时候都认为别人不会修改，所以不会上锁，在修改数据的时候才把事务锁起来；
 - 实现方式：乐观锁一般会使用版本号机制或CAS算法实现；
 
-### 3.x.x 什么是死锁
+### 3.x.x 死锁
 
-死锁是指两个或多个事务在同一资源上相互占用，并请求锁定对方的资源，从而导致恶性循环的现 象；
-
-死锁在InnoDB中才会出现死锁，MyISAM是不会出现死锁，因为MyISAM支持的是表锁，一 次性获取了所有得锁，其它的线程只能排队等候；
-
-### 3.x.x 怎么解决死锁
+死锁是指两个或多个事务在同一资源上相互占用，并请求锁定对方的资源，从而导致恶性循环的现 象，死锁在InnoDB中才会出现死锁，MyISAM是不会出现死锁，因为MyISAM支持的是表锁，一 次性获取了所有得锁，其它的线程只能排队等候；
 
 解决死锁的方法：
 
@@ -3933,7 +3631,10 @@ fork子进程+copyonwrite技术；
 
   - 服务降级：暂停非核心数据查询缓存，返回预定义信息（错误页面，空值等）；
 
-* 情况2：Redis 实例宕机，大量请求进入数据库；
+
+情况2：
+
+- 现象：Redis 实例宕机，大量请求进入数据库；
 
 * 解决方法：
 
@@ -4553,6 +4254,8 @@ Redis 采用了随机取样法，较之链表法占用内存更少，每次只�
 
 ### 5.x.x RocketMQ总体架构
 
+![image-20230515213737649](interview_notes.assets/image-20230515213737649.png)
+
 RocketMQ 一共由四个部分组成：<u>NameServer、Broker、Producer、Consumer</u>，分别对应着<u>发现、存、发、收</u>四个功能；
 
 这四部分的功能很像邮政系统，Producer 相当于负责发送信件的发件人，Consumer 相当于负责接收信件的收件人，Broker 相当于负责暂存信件传输的邮局，NameServer 相当于负责协调各个地方邮局的管理机构；
@@ -4561,25 +4264,129 @@ RocketMQ 一共由四个部分组成：<u>NameServer、Broker、Producer、Consu
 
 ### 5.x.x RocketMQ Broker中的消息被消费后会立即删除吗
 
+不会，每条消息都会持久化到CommitLog中，每个Consumer连接到Broker后会维持消费进度信息，当有消息消费后只是当前Consumer的**消费进度**（CommitLog的offset）更新了；
+
+### 5.x.x RocketMQ消费模式有几种
+
+消费模型由Consumer决定，消费维度为Topic:
+
+- 集群消费:
+  - 一条消息只会被同Group中的一个Consumer消费;
+  - 多个Group同时消费一个Topic时，每个Group都会有一个Consumer消费到数据；
+- 广播消费：
+  - 消息将对一 个Consumer Group 下的各个 Consumer 实例都消费一遍。即即使这些 Consumer 属于同一个Consumer Group ，消息也会被 Consumer Group 中的每个 Consumer 都消费一 次；
+
+### 5.x.x 消费消息是push还是pull
+
+RocketMQ没有真正意义的push，都是pull，虽然有push类，但实际底层实现采用的是长轮询机制，即拉取方式；
+
+事件驱动方式是建立好长连接，由事件（发送数据）的方式来实时推送：
+
+- 如果Broker主动推送消息的话有可能push速度快，消费速度慢的情况，那么就会造成消息在 Consumer端堆积过多，同时又不能被其他Consumer消费的情况；
+- pull的方式可以根据当前自身情况来pull，不 会造成过多的压力而造成瓶颈，所以采取了pull的方式；
+
+### 5.x.x 消息重复消费
+
+消息被重复消费，就是消费方多次接受到了同一条消息；
+
+根本原因：第一次消费完之后，消费方给 MQ 确认已消费的反馈，MQ 没有成功接受（比如网络原因、MQ 重启等），所以 MQ 是无法保证消息不被重复消费的，只能业务系统层面考虑；
+
+解决方案
+
+- 数据库表：处理消息前，使用消息主键在表中带有约束的字段中insert；
+- Map：单机时可以使用map `ConcurrentHashMap -> putIfAbsent guava cache`；
+- Redis：分布式锁；
+
+### 5.x.x 如何让RocketMQ保证消息的顺序消费
+
+同一topic，同一个QUEUE，发消息的时候一个线程去发送消息，消费的时候 一个线程去消费一个 queue里的消息：
+
+- 多个queue只能保证单个queue里的顺序，queue是典型的FIFO，天然顺序；
+- 多个queue同时 消费是无法绝对保证消息的有序性的；
+
+### 5.x.x RocketMQ如何保证消息不丢失
+
+可能会出现丢失消息的情况： <u>Producer，Broker，Consumer</u>
+
+Producer：
+
+- 采取send()同步发消息，发送结果是同步感知的；
+- 发送失败后可以重试，设置重试次数（默认3次）
+- 集群部署，比如发送失败了的原因可能是当前Broker宕机了，重试的时候会发送到其他Broker上；
+
+Broker：
+
+- 修改刷盘策略为同步刷盘（默认情况下是异步刷盘）；
+-  集群部署，主从模式，高可用；
+
+Consumer：
+
+- 完全消费正常后在进行手动ack确认；
+
+### 5.x.x 堆积的消息会不会进死信队列
+
+不会，消息在消费失败后会进入重试队列（%RETRY%+ConsumerGroup），16次（默认16次） 才会进入死信队列（%DLQ%+ConsumerGroup）；
+
+### 5.x.x RocketMQ是如何保证数据的高容错性的
+
+- 在不开启容错的情况下，轮询队列进行发送，如果失败了，重试的时候过滤失败的Broker；
+- 如果开启了容错策略，会通过RocketMQ的预测机制来预测一个Broker是否可用；
+  - 如果上次失败的Broker可用，那么还是会选择该Broker的队列；
+  - 如果上述情况失败，则随机选择一个进行发送 在发送消息的时候会记录一下调用的时间与是否报错，根据该时间去预测broker的可用时间
+
+### 5.x.x 任何一台Broker突然宕机了怎么办
+
+Broker主从架构以及多副本策略；
+
+- Master收到消息后会同步给Slave，这样一条消息就不止一份 了，Master宕机了还有slave中的消息可用，保证了MQ的可靠性和高可用性；
+- Rocket MQ4.5.0开始就支持了Dlegder模式，基于raft的，做到了真正意义的HA；
+
+### 5.x.x Broker把自己的信息注册到哪个NameServer上
+
+Broker会向所有的NameServer上注册自己的信息，而不是某一个，是每 一个；
+
+### 5.x.x Broker宕了，NameServer是怎么感知到的
+
+- Broker会定时（30s）向NameServer发送心跳；
+
+- NameServer会定时（10s）运行一个任务，去检查一下各个Broker的最近一次心跳时间，如果某个Broker超过120s都没发送心跳了，那么就认为这个Broker已经挂掉了；
+
+### 5.x.x Master Broker突然挂了，这样会怎么样
+
+RocketMQ 4.5之前：
+
+- 用Slave Broker同步数据，尽量保证数据不丢失；
+- 但是一旦Master故障 了，Slave是没法自动切换成Master的，所以在这种情况下，如果Master Broker宕机了，这时就得手动做一些运维操作，把Slave Broker 重新修改一些配置，重启机器给调整为Master Broker；
+- 会导致中间一段时 间不可用；
+
+RocketMQ 4.5之后：
+
+- 支持了一种叫做Dledger机制，基于Raft协议实现的一个机制；
+- 基于Dledger实 现RocketMQ高可用自动切换，可以让一个Master Broker对应多个Slave Broker， 一旦 Master Broker 宕机了，在多个 Slave 中 通过 Dledger 技术 将一个 Slave Broker 选为新的 Master Broker 对外提供服务；
+- 在生产 环境中可以是用Dledger机制实现自动故障切换，只要10秒或者几十秒的时间就可以完成；
+
 ### 5.x.x RocketMQ的存储机制
 
 RocketMq采用文件系统存储消息，并采用顺序写写入消息，使用零拷贝发送消息，极大得保证了 RocketMq的性能；
 
-消息生产者发送消息到broker，都是会按照顺序存储在CommitLog文件中，每个commitLog文件的大小为1G；
+消息生产者发送消息到Broker，都是会按照顺序存储在CommitLog文件中，每个commitLog文件的大小为1G；
 
 ![image-20230515004807743](interview_notes.assets/image-20230515004807743.png)
 
-CommitLog-存储所有的消息元数据，包括Topic、QueueId以及message
+- CommitLog：存储所有的消息元数据，包括Topic、QueueId以及message；
+- CosumerQueue：消费逻辑队列，存储消息在CommitLog的offset；
 
-CosumerQueue-消费逻辑队列：存储消息在CommitLog的offset
+- IndexFile：索引文件，存储消息的key和时间戳等信息，使得RocketMq可以采用key和时间区间来查询消息 ；
 
-IndexFile-索引文件：存储消息的key和时间戳等信息，使得RocketMq可以采用key和时间区间来查询消息 
+RocketMq将消息均存储在CommitLog中，并分别提供了CosumerQueue和IndexFile两个索引，来快速检索消息；
 
-也就是说，rocketMq将消息均存储在CommitLog中，并分别提供了CosumerQueue和IndexFile两个索引，来快速检索消息
+### 5.x.x RocketMQ的工作流程是怎样的
 
-### 5.x.x RocketMq的工作流程是怎样的
-
-首先启动NameServer。NameServer启动后监听端口，等待Broker、Producer以及Consumer连 上来 启动Broker。启动之后，会跟所有的NameServer建立并保持一个长连接，定时发送心跳包。心跳 包中包含当前Broker信息(ip、port等)、Topic信息以及Borker与Topic的映射关系 创建Topic。创建时需要指定该Topic要存储在哪些Broker上，也可以在发送消息时自动创建Topic Producer发送消息。启动时先跟NameServer集群中的其中一台建立长连接，并从NameServer中 获取当前发送的Topic所在的Broker；然后从队列列表中轮询选择一个队列，与队列所在的Broker 建立 长连接，进行消息的发送 Consumer消费消息。跟其中一台NameServer建立长连接，获取当前订阅Topic存在哪些Broker 上，然后直接跟Broker建立连接通道，进行消息的消费
+- **启动NameServer**，监听端口，等待Broker、Producer以及Consumer连接；
+- **启动Broker**，和跟所有的NameServer建立并保持一个长连接，定时发送心跳包；心跳包中包含当前Broker信息(ip、port等)、Topic信息以及Borker与Topic的映射关系；
+- **创建Topic**，创建时需要指定该Topic要存储在哪些Broker上，也可以在发送消息时自动创建Topic；
+- **Producer发送消息**，启动时先跟NameServer集群中的其中一台建立长连接，并从NameServer中 获取当前发送的Topic所在的Broker；然后从队列列表中轮询选择一个队列，与队列所在的Broker 建立 长连接，进行消息的发送；
+- **Consumer消费消息**，跟其中一台NameServer建立长连接，获取当前订阅Topic存在哪些Broker 上，然后直接跟Broker建立连接通道，进行消息的消费；
 
 ### 5.x.x RocketMQ性能比较高的原因
 
@@ -4589,7 +4396,12 @@ IndexFile-索引文件：存储消息的key和时间戳等信息，使得RocketM
 
 ### 5.x.x RocketMQ是如何实现定时消息的
 
-定时消息是指消息发到Broker后，不能立刻被Consumer消费，要到特定的时间点或者等待特定的 时间后才能被消费。 其实定时消息实现原理比较简单，如果一个topic对应的消息在发送端被设置 为定时消 息，那么会将该消息先存放在topic为SCHEDULE_TOPIC_XXXX的消息队列中，并将原始 消息的信息存放在commitLog文件中，由于topic为SCHEDULE_TOPIC_XXXX，所以该消息不会被 立即消息，然后通过定时扫描的方式，将到达延迟时间的消息，转换为正确的消息，发送到相应的 队列进行消费
+定时消息是指消息发到Broker后，不能立刻被Consumer消费，要到特定的时间点或者等待特定的 时间后才能被消费；
+
+定时消息实现原理：
+
+- 如果一个Topic对应的消息在发送端被设置为定时消息，那么会将该消息先存放在Topic为SCHEDULE_TOPIC_XXXX的消息队列中，并将原始消息的信息存放在commitLog文件中；
+- 由于Topic为SCHEDULE_TOPIC_XXXX，所以该消息不会被 立即消息，然后通过定时扫描的方式，将到达延迟时间的消息，转换为正确的消息，发送到相应的 队列进行消费；
 
 ### 5.x.x RocketMQ如何保证高可用性
 
@@ -4601,45 +4413,28 @@ IndexFile-索引文件：存储消息的key和时间戳等信息，使得RocketM
 
 - 消费消息的高可用：消费者获取到消息之后，可以等到整个业务处理完成，再进行CONSUME_SUCCESS状态确认，如果业务处理过程中发生了异常那么就会触发broker的重试机制；
 
+### 5.x.x 设计一个消息队列
+
+- 数据存储角度：
+  - 从速度来看，分布式文件系统>分布式KV（持久化）>数据库；
+  - 而可靠性却截然相反，如果追求性能可以基于文件系统的顺序写；
+
+- 高可用角度：
+  - 分区+复制+选举的思想；
+
+- 网络框架角度：
+  - 选用高效的Netty框架，producer 同步异步发送消息，consumer 同步异步接收消息；
+  - 同步能够保证结果，异步能够保证性能；
+
 ## 5.x Kafka
 
 硬生生加个MQ进来，怎么保证消息没有重复消费？怎么处理消息丢失的情况？怎么保证消息传递的顺序性？
 
-## 
-
-## 5.x RocketMQ消费模式有几种
-
-## 5.x 消费消息是push还是pull
-
-## 5.x 为什么要主动拉取消息而不使用事件监听方式
-
-## 5.x 消息重复消费
-
-## 5.x 如何让RocketMQ保证消息的顺序消费
-
-## 5.x RocketMQ如何保证消息不丢失
-
-## 5.x Producer端如何保证消息不丢失
-
-## 5.x Broker端如何保证消息不丢失
-
-## 5.x Consumer端如何保证消息不丢失
-
-## 5.x 堆积的消息会不会进死信队列
-
-## 5.x 如果让你来动手实现一个分布式消息中间件，整体架构你 会如何设计实现
-
-## 5.x RocketMQ是如何保证数据的高容错性的
-
-## 5.x 任何一台Broker突然宕机了怎么办
-
-## 5.x Broker把自己的信息注册到哪个NameServer上
-
-## 5.x Broker宕了，NameServer是怎么感知到的
-
-## 5.x Master Broker突然挂了，这样会怎么样
-
 # 六、设计模式
+
+## 6.x 概念
+
+
 
 ## 6.x 单例模式
 
